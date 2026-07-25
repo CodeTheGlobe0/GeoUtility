@@ -79,10 +79,30 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        # Check if user exists
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise AuthenticationFailed("User with this username does not exist.")
+
+        # Check if user is active
+        if not user.is_active:
+            raise AuthenticationFailed("This user account is inactive.")
+
+        # Authenticate credentials
+        authenticated_user = authenticate(username=username, password=password)
+        if authenticated_user is None:
+            raise AuthenticationFailed("Incorrect password. Please try again.")
+
         data = super().validate(attrs)
         data['user'] = {
             'id': self.user.id,

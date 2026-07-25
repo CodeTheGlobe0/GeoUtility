@@ -66,6 +66,30 @@ class UserAuthAndManagementTests(APITestCase):
         self.assertFalse(response.data["user"]["is_staff"])
         self.assertFalse(response.data["user"]["is_superuser"])
 
+    def test_login_invalid_username(self):
+        """
+        Login with a non-existent username should return 401 with a specific error message.
+        """
+        data = {
+            "username": "does_not_exist",
+            "password": "Password123"
+        }
+        response = self.client.post(self.login_url, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data["detail"], "User with this username does not exist.")
+
+    def test_login_incorrect_password(self):
+        """
+        Login with an incorrect password should return 401 with a specific error message.
+        """
+        data = {
+            "username": "regular_user",
+            "password": "WrongPassword123"
+        }
+        response = self.client.post(self.login_url, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data["detail"], "Incorrect password. Please try again.")
+
     def test_regular_user_cannot_view_user_list(self):
         """
         A regular user should be forbidden from listing all users.
