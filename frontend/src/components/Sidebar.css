@@ -1,0 +1,192 @@
+/* Collapsible Floating Sidebar Styling */
+
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 65px;
+  left: 15px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  z-index: 1100;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(0, 242, 254, 0.1);
+  border-color: #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+}
+
+.sidebar-toggle-btn.open {
+  left: 310px; /* Slides right to sit just outside the open sidebar */
+}
+
+/* Floating Sidebar Container */
+.floating-sidebar {
+  position: fixed;
+  top: 65px;
+  left: 15px;
+  bottom: 15px;
+  width: 280px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px var(--shadow-color);
+  backdrop-filter: blur(25px);
+  z-index: 1000;
+  box-sizing: border-box;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateX(-310px);
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-sidebar.open {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* Scrollbar for Sidebar */
+.floating-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.floating-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.floating-sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+/* Content Layout */
+.sidebar-header {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.sidebar-header h4 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sidebar-header p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 4px 0 0 0;
+}
+
+/* Section Dividers */
+.sidebar-section {
+  margin-bottom: 25px;
+}
+
+.sidebar-section h5 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin: 0 0 12px 0;
+}
+
+/* Layer Option list */
+.layer-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.layer-option-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+.layer-option-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.layer-option-card.active {
+  background: rgba(0, 242, 254, 0.05);
+  border-color: #00f2fe;
+}
+
+.layer-option-card input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #00f2fe;
+  cursor: pointer;
+}
+
+.layer-option-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.layer-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Info Summary stats box */
+.info-box-summary {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: var(--text-muted);
+}
+
+.info-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}

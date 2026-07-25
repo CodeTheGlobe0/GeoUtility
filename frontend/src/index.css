@@ -1,8 +1,39 @@
+:root {
+  /* Dark Mode Variables (Default) - Premium Navy Blue */
+  --bg-color: #080f26;
+  --card-bg: rgba(16, 29, 66, 0.6);
+  --modal-bg: rgba(10, 20, 48, 0.96);
+  --navbar-bg: rgba(10, 20, 48, 0.45);
+  --text-color: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: rgba(100, 150, 255, 0.12);
+  --input-bg: rgba(26, 42, 86, 0.6);
+  --text-primary: #f8fafc;
+  --shadow-color: rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="light"] {
+  /* Light Mode Variables */
+  --bg-color: #f8fafc;
+  --card-bg: rgba(255, 255, 255, 0.65);
+  --modal-bg: rgba(255, 255, 255, 0.9);
+  --navbar-bg: rgba(255, 255, 255, 0.4); /* Refined glassmorphism transparency */
+  --text-color: #334155;
+  --text-muted: #64748b;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --input-bg: rgba(241, 245, 249, 0.8);
+  --text-primary: #0f172a;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+}
+
 body, html, #root {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background-color: var(--bg-color);
+  color: var(--text-color);
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

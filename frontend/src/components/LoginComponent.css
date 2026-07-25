@@ -4,9 +4,10 @@
   display: flex;
   width: 100vw;
   height: 100vh;
-  background-color: #080c16;
+  background-color: var(--bg-color);
   overflow: hidden;
-  color: #e2e8f0;
+  color: var(--text-color);
+  transition: all 0.3s ease;
 }
 
 /* Left Pane: Graphics Illustration */
@@ -72,13 +73,14 @@
 .login-card {
   width: 100%;
   max-width: 420px;
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 45px 40px;
   backdrop-filter: blur(25px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 40px var(--shadow-color);
   animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .login-header {
@@ -89,12 +91,12 @@
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .login-header p {
   font-size: 0.95rem;
-  color: #64748b;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -109,7 +111,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -121,9 +123,9 @@
   width: 100%;
   padding: 14px 16px;
   border-radius: 12px;
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   font-size: 1rem;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -132,7 +134,7 @@
 .form-input:focus {
   outline: none;
   border-color: #00f2fe;
-  background: rgba(30, 41, 59, 0.7);
+  background: var(--input-bg);
   box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
 }
 
@@ -206,9 +208,9 @@
   }
   .login-form-pane {
     flex: 1;
-    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.95), #080c16);
+    background: radial-gradient(circle at center, var(--bg-color), #080c16);
   }
   .login-card {
-    background: rgba(15, 23, 42, 0.85);
+    background: var(--card-bg);
   }
 }
