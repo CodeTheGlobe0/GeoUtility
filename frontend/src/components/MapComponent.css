@@ -11,3 +11,105 @@
   width: 100%;
   height: 100%;
 }
+
+/* Floating Right-Side Control Toolbar Card */
+.map-control-toolbar-card {
+  position: absolute;
+  top: 65px;
+  right: 15px;
+  z-index: 1000;
+  background: rgba(22, 30, 49, 0.85); /* Highly visible navy slate glass */
+  border: 1px solid rgba(100, 150, 255, 0.35); /* Bright blue border for dark map contrast */
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(25px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  transition: all 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="light"] .map-control-toolbar-card {
+  background: rgba(255, 255, 255, 0.85); /* Bright white card in light mode */
+  border: 1px solid rgba(0, 0, 0, 0.15); /* Soft dark boundary */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Custom Actions inside Toolbar */
+.toolbar-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.toolbar-action-btn:hover {
+  background: rgba(0, 242, 254, 0.1);
+  color: #00f2fe;
+}
+
+/* Disabled future slot buttons */
+.toolbar-action-btn.placeholder {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbar-action-btn.placeholder:hover {
+  background: transparent;
+  color: var(--text-color);
+}
+
+.toolbar-divider {
+  width: 18px;
+  height: 1px;
+  background: var(--border-color);
+}
+
+/* Nested Layer Switcher Styles Overrides inside the Toolbar Card */
+.map-control-toolbar-card .map-layer-switcher-container {
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-control-toolbar-card .layer-trigger-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  transition: all 0.2s ease;
+}
+
+.map-control-toolbar-card .layer-trigger-btn:hover,
+.map-control-toolbar-card .layer-trigger-btn.active {
+  background: rgba(0, 242, 254, 0.1);
+  color: #00f2fe;
+  box-shadow: none;
+  transform: none;
+}
+
+.map-control-toolbar-card .layers-drawer-panel {
+  position: absolute;
+  right: 44px; /* Expand to the left of the toolbar card */
+  top: -12px;
+}

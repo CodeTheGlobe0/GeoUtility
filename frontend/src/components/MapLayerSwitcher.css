@@ -1,0 +1,119 @@
+/* Floating Right-Hand Map Style Selector Styling */
+
+.map-layer-switcher-container {
+  position: fixed;
+  top: 140px; /* Positioned below zoom controls (top: 60px) */
+  right: 15px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: Inter, system-ui, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Switcher Trigger Button */
+.layer-trigger-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.layer-trigger-btn:hover {
+  background: rgba(0, 242, 254, 0.1);
+  border-color: #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+  transform: translateY(-1px);
+}
+
+.layer-trigger-btn.active {
+  background: rgba(0, 242, 254, 0.15);
+  border-color: #00f2fe;
+  color: #00f2fe;
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+}
+
+/* Expanded Inline Panel options list */
+.layers-drawer-panel {
+  display: flex;
+  gap: 8px;
+  background: var(--modal-bg);
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 25px var(--shadow-color);
+  animation: slideLeftDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+/* Individual Map Option Card */
+.map-style-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 56px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+.map-style-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.map-style-card.selected {
+  background: rgba(0, 242, 254, 0.05);
+  border-color: #00f2fe;
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+}
+
+.style-card-icon {
+  font-size: 1.2rem;
+}
+
+.style-card-name {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-top: 4px;
+  text-align: center;
+}
+
+.map-style-card.selected .style-card-name {
+  color: #00f2fe;
+}
+
+/* Animations */
+@keyframes slideLeftDrawer {
+  from {
+    opacity: 0;
+    transform: translateX(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}

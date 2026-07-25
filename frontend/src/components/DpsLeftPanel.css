@@ -1,0 +1,176 @@
+/* DDA-style DPS Left QC panel styles */
+
+.dps-left-panel {
+  position: fixed;
+  top: 65px;
+  left: 15px;
+  bottom: 15px;
+  width: 330px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: 0 10px 45px var(--shadow-color);
+  backdrop-filter: blur(25px);
+  z-index: 1000;
+  box-sizing: border-box;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: Inter, system-ui, sans-serif;
+  transition: all 0.3s ease;
+}
+
+.dps-section-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+/* Upload input simulation cards */
+.dps-upload-card {
+  border: 1px dashed var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.25s ease;
+}
+
+.dps-upload-card:hover {
+  background: rgba(0, 242, 254, 0.03);
+  border-color: #00f2fe;
+}
+
+.dps-upload-card.has-file {
+  background: rgba(52, 211, 153, 0.03);
+  border-color: #34d399;
+}
+
+.upload-icon {
+  font-size: 1.25rem;
+}
+
+.upload-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.upload-title {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.upload-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Run trigger button */
+.dps-run-btn {
+  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+  color: #ffffff;
+  border: none;
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+  transition: all 0.3s ease;
+  margin-top: 8px;
+}
+
+.dps-run-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 242, 254, 0.35);
+}
+
+.dps-run-btn:disabled {
+  background: var(--input-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Logging console screen */
+.dps-console-log {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 15px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: #34d399; /* Terminal green */
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+}
+
+.dps-console-log::-webkit-scrollbar {
+  width: 4px;
+}
+.dps-console-log::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.console-entry {
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.console-entry.success {
+  color: #34d399;
+}
+
+.console-entry.info {
+  color: #94a3b8;
+}
+
+.console-entry.error {
+  color: #f87171;
+}
+
+/* Template standard download button */
+.dps-download-btn {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dps-download-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--text-muted);
+}
