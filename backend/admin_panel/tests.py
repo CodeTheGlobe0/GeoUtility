@@ -172,6 +172,36 @@ class UserAuthAndManagementTests(APITestCase):
         self.assertTrue(self.regular_user.is_staff)
         self.assertTrue(self.regular_user.is_superuser)
 
+    def test_staff_cannot_assign_roles(self):
+        """
+        A staff user (not superuser) should not be allowed to assign is_staff=True or is_superuser=True.
+        """
+        staff_user = User.objects.create_user(
+            username="staff_user",
+            email="staff@example.com",
+            password="StaffPassword123",
+            is_staff=True
+        )
+        self.client.force_authenticate(user=staff_user)
+
+        # 1. Attempt to create a user with is_staff=True (should fail)
+        create_data = {
+            "username": "new_staff_by_staff",
+            "password": "Password123",
+            "is_staff": True
+        }
+        response = self.client.post(self.user_list_url, create_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("is_staff", response.data)
+
+        # 2. Attempt to update a user to is_staff=True (should fail)
+        update_data = {
+            "is_staff": True
+        }
+        response = self.client.patch(self.user_detail_url(self.regular_user.pk), update_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("is_staff", response.data)
+
     def test_logout_blacklists_token(self):
         """
         Logging out should blacklist the refresh token.
