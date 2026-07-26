@@ -23,9 +23,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
             # Only superusers can set is_superuser = True
             if attrs.get('is_superuser', False) and not request_user.is_superuser:
                 raise serializers.ValidationError({"is_superuser": "Only superusers can assign superuser privileges."})
-            # Only staff or superusers can set is_staff = True
-            if attrs.get('is_staff', False) and not (request_user.is_staff or request_user.is_superuser):
-                raise serializers.ValidationError({"is_staff": "Only staff or superusers can assign staff status."})
+            # Only superusers can set is_staff = True
+            if attrs.get('is_staff', False) and not request_user.is_superuser:
+                raise serializers.ValidationError({"is_staff": "Only superusers can assign staff status."})
         return attrs
 
     def create(self, validated_data):
@@ -58,8 +58,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             # Check is_staff modification
             is_staff_val = attrs.get('is_staff')
             if is_staff_val is not None and is_staff_val != instance.is_staff:
-                if not (request_user.is_staff or request_user.is_superuser):
-                    raise serializers.ValidationError({"is_staff": "Only staff or superusers can change staff status."})
+                if not request_user.is_superuser:
+                    raise serializers.ValidationError({"is_staff": "Only superusers can change staff status."})
             
             # Check is_superuser modification
             is_superuser_val = attrs.get('is_superuser')
