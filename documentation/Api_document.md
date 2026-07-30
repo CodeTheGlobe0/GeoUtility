@@ -1,8 +1,6 @@
-# GeoUtility Authentication & User Management API Documentation
+# GeoUtility GIS & Planning Portal API Documentation
 
-This document contains a comprehensive specification of all authentication and user administration API endpoints available in the backend system.
-
-**Base URL Path:** `/api/auth/` (Unless specified otherwise)
+This document contains a comprehensive specification of all authentication, user administration, and GIS data validation API endpoints available in the backend system.
 
 ---
 
@@ -17,6 +15,7 @@ This document contains a comprehensive specification of all authentication and u
 8. [Retrieve User Details](#8-retrieve-user-details)
 9. [Update User Details](#9-update-user-details)
 10. [Delete User](#10-delete-user)
+11. [Data Process Validation](#11-data-process-validation)
 
 ---
 
@@ -116,7 +115,7 @@ Logs the user out by blacklisting their current refresh token. The blacklisted t
 ### 3. Token Refresh
 Generates a new short-lived access token using a valid, active refresh token.
 
-*   **URL:** `/api/token/refresh/` (Note: Registered under root api path)
+*   **URL:** `/api/token/refresh/` (Note: Registered under root API path)
 *   **Method:** `POST`
 *   **Authentication:** None (`AllowAny`)
 *   **Headers:**
@@ -254,7 +253,7 @@ Returns a listing of all users in the system.
 ---
 
 ### 7. Create User (Admin)
-Allows staff or superusers to create new user accounts directly and assign roles.
+Allows staff or superusers to create new user accounts directly. However, assigning role privileges (`is_staff` or `is_superuser`) is strictly locked down to superusers.
 
 *   **URL:** `/api/auth/users/`
 *   **Method:** `POST`
@@ -269,7 +268,7 @@ Allows staff or superusers to create new user accounts directly and assign roles
   "username": "manager_alice",
   "password": "AlicePassword123",
   "email": "alice@example.com",
-  "is_staff": true,      // Allowed if request user is staff or superuser
+  "is_staff": true,      // Allowed only if request user is superuser
   "is_superuser": false  // Allowed only if request user is superuser
 }
 ```
@@ -290,13 +289,13 @@ Allows staff or superusers to create new user accounts directly and assign roles
     ```
 
 #### Error Response (Privilege Escalation Attempt)
-If a regular staff user attempts to assign `is_superuser = true`:
+If a regular staff user attempts to assign `is_staff = true` or `is_superuser = true`:
 *   **Status Code:** `400 Bad Request`
 *   **Response Body:**
     ```json
     {
-      "is_superuser": [
-        "Only superusers can assign superuser privileges."
+      "is_staff": [
+        "Only superusers can assign staff status."
       ]
     }
     ```
@@ -341,7 +340,7 @@ If user `john_doe` (ID 5) tries to access `/api/auth/users/6/`:
 ---
 
 ### 9. Update User Details
-Updates specific user details. Supporting privilege promotion checks.
+Updates specific user details. Modifying role privileges (`is_staff` or `is_superuser`) is strictly locked down to superusers.
 
 *   **URL:** `/api/auth/users/<id>/` (Example: `/api/auth/users/5/`)
 *   **Method:** `PUT` or `PATCH`
@@ -354,7 +353,7 @@ Updates specific user details. Supporting privilege promotion checks.
 ```json
 {
   "first_name": "John",
-  "is_staff": true // Will raise 400 Bad Request if requesting user is standard user
+  "is_staff": true // Will raise 400 Bad Request if requesting user is standard or staff user
 }
 ```
 
@@ -374,13 +373,13 @@ Updates specific user details. Supporting privilege promotion checks.
     ```
 
 #### Error Response (Unauthorized Promotion)
-If a regular user (or non-superuser staff) attempts to change `is_superuser`:
+If a non-superuser attempts to change `is_staff` or `is_superuser`:
 *   **Status Code:** `400 Bad Request`
 *   **Response Body:**
     ```json
     {
-      "is_superuser": [
-        "Only superusers can change superuser status."
+      "is_staff": [
+        "Only superusers can change staff status."
       ]
     }
     ```
@@ -399,3 +398,82 @@ Deletes a user account.
 #### Success Response
 *   **Status Code:** `204 No Content`
 *   **Response Body:** (Empty response body)
+
+---
+
+### 11. Data Process Validation
+Decodes a Base64 encoded ZIP archive payload and validates that it contains a top-level directory named `source/` containing exactly one `.gdb` folder.
+
+*   **URL:** `/api/data-process/validate/`
+*   **Method:** `POST`
+*   **Authentication:** Token-based (`IsAuthenticated`)
+*   **Headers:**
+    *   `Authorization: Bearer <access_token>`
+    *   `Content-Type: application/json`
+
+#### Request Body
+```json
+{
+  "user_id": "101",
+  "temp_id": "sess_8892",
+  "file_type": "gdb_zip",
+  "file_data": "UEsDBBQAAAAIAI9iW..." // Base64 encoded ZIP stream
+}
+```
+
+#### Success Response
+*   **Status Code:** `200 OK`
+*   **Response Body:**
+    ```json
+    {
+      "status": "success",
+      "message": "File validation passed successfully.",
+      "user_id": "101",
+      "temp_id": "sess_8892",
+      "file_type": "gdb_zip"
+    }
+    ```
+
+#### Error Response (Invalid Base64 Data)
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "file_data": [
+        "Invalid Base64 format: Incorrect padding"
+      ]
+    }
+    ```
+
+#### Error Response (Corrupted ZIP or Invalid Headers)
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "file_data": [
+        "The decoded file stream is not a valid ZIP archive."
+      ]
+    }
+    ```
+
+#### Error Response (Missing source/ directory)
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "file_data": [
+        "Missing 'source/' top-level directory inside the ZIP archive."
+      ]
+    }
+    ```
+
+#### Error Response (Invalid GDB counts)
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "file_data": [
+        "Exactly one '.gdb' directory is required inside 'source/', but found 2: first_dataset.gdb, second_dataset.gdb."
+      ]
+    }
+    ```
