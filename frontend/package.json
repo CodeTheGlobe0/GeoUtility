@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cesium": "^1.143.0",
     "ol": "^10.9.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "vite-plugin-cesium": "^1.2.23"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

@@ -2,23 +2,20 @@
 
 .dps-left-panel {
   position: fixed;
-  top: 65px;
+  top: 56px;
   left: 15px;
   bottom: 15px;
   width: 330px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 18px;
-  box-shadow: 0 10px 45px var(--shadow-color);
-  backdrop-filter: blur(25px);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px var(--shadow-color);
   z-index: 1000;
   box-sizing: border-box;
   padding: 22px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  font-family: Inter, system-ui, sans-serif;
-  transition: all 0.3s ease;
 }
 
 .dps-section-title {
@@ -33,7 +30,7 @@
 /* Upload input simulation cards */
 .dps-upload-card {
   border: 1px dashed var(--border-color);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--input-bg);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 12px;
@@ -41,12 +38,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .dps-upload-card:hover {
-  background: rgba(0, 242, 254, 0.03);
-  border-color: #00f2fe;
+  background: #eef2ff;
+  border-color: var(--accent);
 }
 
 .dps-upload-card.has-file {
@@ -55,7 +52,10 @@
 }
 
 .upload-icon {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
 }
 
 .upload-meta {
@@ -82,7 +82,7 @@
 
 /* Run trigger button */
 .dps-run-btn {
-  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+  background: var(--accent);
   color: #ffffff;
   border: none;
   width: 100%;
@@ -91,14 +91,16 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
   margin-top: 8px;
 }
 
 .dps-run-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 242, 254, 0.35);
+  background: var(--accent-dark);
 }
 
 .dps-run-btn:disabled {
@@ -163,14 +165,14 @@
   font-weight: 700;
   cursor: pointer;
   margin-top: 15px;
-  transition: all 0.25s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transition: all 0.2s ease;
 }
 
 .dps-download-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--border-color);
   border-color: var(--text-muted);
 }

@@ -402,7 +402,7 @@ Deletes a user account.
 ---
 
 ### 11. Data Process Validation
-Decodes a Base64 encoded ZIP archive payload and validates that it contains a top-level directory named `source/` containing exactly one `.gdb` folder.
+Decodes a Base64 encoded ZIP archive payload and validates that it contains a top-level directory named `source/` containing exactly one `.gdb` folder. The decoded archive must not exceed **20 MB**.
 
 *   **URL:** `/api/data-process/validate/`
 *   **Method:** `POST`
@@ -412,58 +412,103 @@ Decodes a Base64 encoded ZIP archive payload and validates that it contains a to
     *   `Content-Type: application/json`
 
 #### Request Body
+`file_type` must be exactly `"gdb"` or `"shp"` — any other value is rejected with a `400`. Note: the ZIP structure check itself is unchanged regardless of which value is chosen — it still requires `source/` with exactly one `.gdb` folder.
 ```json
 {
   "user_id": "101",
   "temp_id": "sess_8892",
-  "file_type": "gdb_zip",
+  "file_type": "gdb",
   "file_data": "UEsDBBQAAAAIAI9iW..." // Base64 encoded ZIP stream
 }
 ```
 
 #### Success Response
+On success, the ZIP archive's contents are extracted to `MEDIA_ROOT/<authenticated_user_id>/<file_type>/<temp_id>/` and a `FileUploadRecord` row is created with `status=SUCCESS` pointing at that path (note: the folder's user segment is the **authenticated** user's ID from the JWT, not the `user_id` field in the request body; no date folder is used since `temp_id` is expected to already be unique per upload).
 *   **Status Code:** `200 OK`
 *   **Response Body:**
     ```json
     {
-      "status": "success",
+      "success": true,
       "message": "File validation passed successfully.",
-      "user_id": "101",
-      "temp_id": "sess_8892",
-      "file_type": "gdb_zip"
+      "data": {
+        "user_id": "101",
+        "temp_id": "sess_8892",
+        "file_type": "gdb",
+        "extracted_path": "5/gdb/sess_8892"
+      },
+      "errors": null
     }
     ```
 
-#### Error Response (Invalid Base64 Data)
+#### Error Response (Invalid file_type)
 *   **Status Code:** `400 Bad Request`
 *   **Response Body:**
     ```json
     {
-      "file_data": [
-        "Invalid Base64 format: Incorrect padding"
-      ]
+      "success": false,
+      "message": "\"gdb_zip\" is not a valid choice.",
+      "data": null,
+      "errors": {
+        "file_type": [
+          "\"gdb_zip\" is not a valid choice."
+        ]
+      }
+    }
+    ```
+
+#### Validation Behavior: All Errors Are Reported Together
+Aside from an invalid Base64 payload (which is a hard stop, since nothing else can be checked without decoded bytes), every other check runs independently and **all failures are collected into a single response** — the caller does not need to fix and resubmit one error at a time. The checks that can combine are: file size, ZIP format validity, missing `source/` directory, and missing/multiple `.gdb` folders.
+
+#### Error Response (Invalid Base64 Data)
+Hard stop — no other checks run.
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "Invalid Base64 format: Incorrect padding",
+      "data": null,
+      "errors": {
+        "file_data": [
+          "Invalid Base64 format: Incorrect padding"
+        ]
+      }
+    }
+    ```
+
+#### Error Response (Multiple Issues Found In One Pass)
+Example: the payload is oversized **and** the ZIP is missing its `source/` directory **and** has no `.gdb` folder.
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "3 validation errors occurred.",
+      "data": null,
+      "errors": {
+        "file_data": [
+          "File size exceeds the maximum allowed limit of 20 MB (received 24.13 MB).",
+          "Missing 'source/' top-level directory inside the ZIP archive.",
+          "No '.gdb' directory found inside the 'source/' folder."
+        ]
+      }
     }
     ```
 
 #### Error Response (Corrupted ZIP or Invalid Headers)
+If the ZIP itself is not valid/corrupted, structural checks (`source/`, `.gdb`) are skipped since the archive can't be opened — but the size error (if applicable) is still included alongside it.
 *   **Status Code:** `400 Bad Request`
 *   **Response Body:**
     ```json
     {
-      "file_data": [
-        "The decoded file stream is not a valid ZIP archive."
-      ]
-    }
-    ```
-
-#### Error Response (Missing source/ directory)
-*   **Status Code:** `400 Bad Request`
-*   **Response Body:**
-    ```json
-    {
-      "file_data": [
-        "Missing 'source/' top-level directory inside the ZIP archive."
-      ]
+      "success": false,
+      "message": "The decoded file stream is not a valid ZIP archive.",
+      "data": null,
+      "errors": {
+        "file_data": [
+          "The decoded file stream is not a valid ZIP archive."
+        ]
+      }
     }
     ```
 
@@ -472,8 +517,13 @@ Decodes a Base64 encoded ZIP archive payload and validates that it contains a to
 *   **Response Body:**
     ```json
     {
-      "file_data": [
-        "Exactly one '.gdb' directory is required inside 'source/', but found 2: first_dataset.gdb, second_dataset.gdb."
-      ]
+      "success": false,
+      "message": "Exactly one '.gdb' directory is required inside 'source/', but found 2: first_dataset.gdb, second_dataset.gdb.",
+      "data": null,
+      "errors": {
+        "file_data": [
+          "Exactly one '.gdb' directory is required inside 'source/', but found 2: first_dataset.gdb, second_dataset.gdb."
+        ]
+      }
     }
     ```

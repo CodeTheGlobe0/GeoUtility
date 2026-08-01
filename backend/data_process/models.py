@@ -1,24 +1,17 @@
-import os
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
 
-def get_upload_path(instance, filename: str) -> str:
+
+def get_extraction_relative_path(instance) -> str:
     """
-    Helper function to generate the dynamic upload path:
-    upload-{user_id}-{YYYYMMDD_HHMMSS}-{temp_id}/<filename>
+    Builds the relative (to MEDIA_ROOT) destination directory for a validated
+    upload's extracted contents: <user_id>/<file_type>/<temp_id>/
+    temp_id is expected to be unique per upload, so no separate date folder is needed.
     """
-    # Use instance created_at if set, otherwise fallback to current time
-    now = instance.created_at or timezone.now()
-    timestamp = now.strftime('%Y%m%d_%H%M%S')
-    
-    # Get user identifier
     user_id_str = str(instance.user.id) if instance.user else "anonymous"
-    
-    # Sanitize the filename to prevent path traversal issues
-    clean_filename = os.path.basename(filename)
-    
-    return f"upload-{user_id_str}-{timestamp}-{instance.temp_id}/{clean_filename}"
+    file_type_str = instance.file_type or "unknown"
+
+    return f"{user_id_str}/{file_type_str}/{instance.temp_id}"
 
 class FileUploadRecord(models.Model):
     """
@@ -45,10 +38,9 @@ class FileUploadRecord(models.Model):
         max_length=50,
         help_text="Expected extension or format indicator (e.g., '.shp', '.gdb')."
     )
-    file_path = models.FileField(
-        upload_to=get_upload_path,
+    extracted_path = models.CharField(
         max_length=500,
-        help_text="Storage path for the uploaded ZIP archive."
+        help_text="Path (relative to MEDIA_ROOT) of the directory holding the extracted archive contents."
     )
     status = models.CharField(
         max_length=20,

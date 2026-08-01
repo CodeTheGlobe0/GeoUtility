@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './MapLayerSwitcher.css';
+import { IconMap, IconLayers, IconMoon, IconGlobe } from './Icons';
 
 const MapLayerSwitcher = ({ activeBaseLayer, onBaseLayerChange }) => {
   const [expanded, setExpanded] = useState(false);
@@ -19,10 +20,10 @@ const MapLayerSwitcher = ({ activeBaseLayer, onBaseLayerChange }) => {
   }, []);
 
   const styles = [
-    { id: 'osm', name: 'Standard', icon: '🗺️' },
-    { id: 'light', name: 'Light Map', icon: '📄' },
-    { id: 'dark', name: 'Dark Map', icon: '🌑' },
-    { id: 'satellite', name: 'Satellite', icon: '🛰️' },
+    { id: 'osm', name: 'Standard', icon: <IconMap size={16} /> },
+    { id: 'light', name: 'Light Map', icon: <IconLayers size={16} /> },
+    { id: 'dark', name: 'Dark Map', icon: <IconMoon size={16} /> },
+    { id: 'satellite', name: 'Satellite', icon: <IconGlobe size={16} /> },
   ];
 
   const handleSelectStyle = (styleId) => {

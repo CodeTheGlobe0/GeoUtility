@@ -1,0 +1,378 @@
+/* Command-center style dashboard overlay for the Home map.
+   Deliberately dark (mission-control aesthetic over the globe/map),
+   self-contained and independent of the app's light theme tokens. */
+
+.hcd-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  font-family: "Inter", sans-serif;
+}
+
+.hcd-col {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 250px;
+}
+
+.hcd-col-left {
+  top: 104px;
+  left: 15px;
+  bottom: 15px;
+}
+
+.hcd-col-right {
+  top: 56px;
+  right: 75px;
+}
+
+.hcd-bottom-row {
+  position: absolute;
+  bottom: 15px;
+  left: 280px;
+  right: 75px;
+  display: flex;
+  gap: 14px;
+  height: 168px;
+}
+
+.hcd-card {
+  pointer-events: auto;
+  background: rgba(13, 24, 43, 0.88);
+  border: 1px solid rgba(94, 234, 212, 0.18);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #e2e8f0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.hcd-card-accent {
+  border-color: rgba(94, 234, 212, 0.4);
+  box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.12), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Fixed sizing so populating/clearing data never shifts the layout */
+.hcd-card-sm {
+  min-height: 96px;
+  flex-shrink: 0;
+  justify-content: space-between;
+}
+
+.hcd-card-lg {
+  min-height: 230px;
+  flex: 1;
+}
+
+.hcd-bottom-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.hcd-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.hcd-card-header em {
+  font-style: normal;
+  color: #64748b;
+  font-size: 0.65rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.hcd-card-header svg {
+  color: #34d399;
+}
+
+.hcd-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hcd-hint {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-top: 8px;
+  display: block;
+}
+
+.hcd-feature-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.hcd-big-number {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.15;
+}
+
+.hcd-big-number.small {
+  font-size: 1.4rem;
+}
+
+.hcd-progress-track {
+  margin-top: 10px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.hcd-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #5eead4);
+  border-radius: 3px;
+}
+
+.hcd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+  margin-top: 4px;
+}
+
+.hcd-table th {
+  text-align: left;
+  color: #64748b;
+  font-weight: 600;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.4px;
+}
+
+/* Grayed-out header row for empty table states */
+.hcd-thead-dim th {
+  color: #475569;
+  opacity: 0.7;
+}
+
+.hcd-table td {
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hcd-check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hcd-check-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.hcd-check-list svg {
+  color: #34d399;
+  flex-shrink: 0;
+}
+
+.hcd-bars-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 12px;
+  height: 70px;
+}
+
+.hcd-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.hcd-bar-pair {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 50px;
+}
+
+.hcd-bar {
+  width: 8px;
+  border-radius: 2px 2px 0 0;
+  background: #2563eb;
+  min-height: 2px;
+}
+
+.hcd-bar.alt {
+  background: #34d399;
+}
+
+.hcd-bar.warn {
+  background: #f59e0b;
+}
+
+/* Ghost bars: keep the chart grid/track visible with no real data yet */
+.hcd-bar.ghost {
+  height: 8%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hcd-bar-label {
+  font-size: 0.6rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.hcd-chart-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.hcd-bars-grid {
+  opacity: 0.5;
+}
+
+.hcd-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.hcd-dot.ok {
+  background: #34d399;
+}
+
+.hcd-dot.warn {
+  background: #f59e0b;
+}
+
+.hcd-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  overflow-y: auto;
+}
+
+.hcd-log-list em {
+  display: block;
+  font-style: normal;
+  margin-top: 2px;
+}
+
+.hcd-log-list em.err {
+  color: #f87171;
+}
+
+.hcd-log-list em.ok {
+  color: #34d399;
+}
+
+/* Shared wrapper for the table/list area in bottom-row cards: fills the
+   remaining space so the empty state centers correctly and the upload
+   button (a sibling) stays pinned to the bottom either way. */
+.hcd-table-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reusable empty-state block: icon + title + subtitle, centered in
+   whatever space is available so cards never render as blank boxes. */
+.hcd-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  color: #64748b;
+  padding: 6px 8px;
+}
+
+.hcd-empty-state svg {
+  color: #475569;
+  margin-bottom: 2px;
+}
+
+.hcd-empty-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.hcd-empty-subtitle {
+  font-size: 0.66rem;
+  color: #64748b;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+.hcd-upload-btn {
+  margin-top: 8px;
+  flex-shrink: 0;
+  width: 100%;
+  background: #059669;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.hcd-upload-btn:hover {
+  background: #047857;
+}
+
+/* Hide on narrow / short viewports rather than render a broken overlay */
+@media (max-width: 1100px), (max-height: 620px) {
+  .hcd-overlay {
+    display: none;
+  }
+}

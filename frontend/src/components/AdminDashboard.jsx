@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../config';
 import './ProfileModal.css'; // sharing basic modal alerts
 import './AdminDashboard.css';
+import { IconUsers, IconStar, IconBriefcase, IconUser, IconShield, IconTrash } from './Icons';
 
 const AdminDashboard = ({ onClose }) => {
   const [users, setUsers] = useState([]);
@@ -255,7 +256,7 @@ const AdminDashboard = ({ onClose }) => {
       {/* Metrics Row */}
       <section className="stats-cards-row">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(0, 242, 254, 0.1)', color: '#00f2fe' }}>👥</div>
+          <div className="stat-icon" style={{ background: '#eef2ff', color: '#2563eb' }}><IconUsers size={20} /></div>
           <div className="stat-info">
             <span className="stat-value">{totalCount}</span>
             <span className="stat-label">Total Users</span>
@@ -263,7 +264,7 @@ const AdminDashboard = ({ onClose }) => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#f472b6' }}>👑</div>
+          <div className="stat-icon" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#f472b6' }}><IconStar size={18} /></div>
           <div className="stat-info">
             <span className="stat-value">{superAdminsCount}</span>
             <span className="stat-label">Super Admins</span>
@@ -271,7 +272,7 @@ const AdminDashboard = ({ onClose }) => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399' }}>🛠️</div>
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399' }}><IconBriefcase size={19} /></div>
           <div className="stat-info">
             <span className="stat-value">{staffOperatorsCount}</span>
             <span className="stat-label">Staff Operators</span>
@@ -279,7 +280,7 @@ const AdminDashboard = ({ onClose }) => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(100, 116, 139, 0.1)', color: '#94a3b8' }}>👤</div>
+          <div className="stat-icon" style={{ background: 'rgba(100, 116, 139, 0.1)', color: '#94a3b8' }}><IconUser size={19} /></div>
           <div className="stat-info">
             <span className="stat-value">{regularUsersCount}</span>
             <span className="stat-label">Regular Users</span>
@@ -487,13 +488,13 @@ const AdminDashboard = ({ onClose }) => {
                   onClick={handleDeleteUser}
                   disabled={actionLoading || selectedUser.id === currentUserId}
                 >
-                  🗑️ Delete User Account
+                  <IconTrash size={15} /> Delete User Account
                 </button>
               )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', textAlign: 'center', padding: '40px' }}>
-              <span style={{ fontSize: '3rem', marginBottom: '20px' }}>🛡️</span>
+              <IconShield size={44} style={{ marginBottom: '20px', opacity: 0.6 }} />
               <h4 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', margin: '0 0 10px 0' }}>
                 Account Management Inspector
               </h4>

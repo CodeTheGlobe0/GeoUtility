@@ -1,29 +1,21 @@
 :root {
-  /* Dark Mode Variables (Default) - Premium Navy Blue */
-  --bg-color: #080f26;
-  --card-bg: rgba(16, 29, 66, 0.6);
-  --modal-bg: rgba(10, 20, 48, 0.96);
-  --navbar-bg: rgba(10, 20, 48, 0.45);
-  --text-color: #cbd5e1;
-  --text-muted: #94a3b8;
-  --border-color: rgba(100, 150, 255, 0.12);
-  --input-bg: rgba(26, 42, 86, 0.6);
-  --text-primary: #f8fafc;
-  --shadow-color: rgba(0, 0, 0, 0.55);
-}
+  /* Single professional light theme — modeled on modern WebGIS tools
+     (Felt, ArcGIS Online, CARTO): flat white surfaces, muted slate
+     text, restrained blue accent instead of glow/gradient chrome. */
+  --bg-color: #f3f5f8;
+  --card-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --navbar-bg: #ffffff;
+  --text-color: #3c4655;
+  --text-muted: #6b7686;
+  --border-color: #e3e7ed;
+  --input-bg: #f5f7fa;
+  --text-primary: #101828;
+  --shadow-color: rgba(16, 24, 40, 0.08);
 
-[data-theme="light"] {
-  /* Light Mode Variables */
-  --bg-color: #f8fafc;
-  --card-bg: rgba(255, 255, 255, 0.65);
-  --modal-bg: rgba(255, 255, 255, 0.9);
-  --navbar-bg: rgba(255, 255, 255, 0.4); /* Refined glassmorphism transparency */
-  --text-color: #334155;
-  --text-muted: #64748b;
-  --border-color: rgba(0, 0, 0, 0.08);
-  --input-bg: rgba(241, 245, 249, 0.8);
-  --text-primary: #0f172a;
-  --shadow-color: rgba(0, 0, 0, 0.08);
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-rgb: 37, 99, 235;
 }
 
 body, html, #root {
@@ -34,6 +26,32 @@ body, html, #root {
   overflow: hidden;
   background-color: var(--bg-color);
   color: var(--text-color);
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: "Inter", sans-serif;
+}
+
+/* Shared role badge pill (used in Navbar dropdown + Admin Dashboard) */
+.role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.role-badge.superuser {
+  background: #fdf2f8;
+  color: #db2777;
+}
+
+.role-badge.staff {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.role-badge.user {
+  background: var(--input-bg);
+  color: var(--text-muted);
 }

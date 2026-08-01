@@ -20,14 +20,12 @@
   max-width: 480px;
   background: var(--modal-bg);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 40px;
-  box-shadow: 0 25px 50px var(--shadow-color);
-  backdrop-filter: blur(25px);
+  box-shadow: 0 20px 44px var(--shadow-color);
   position: relative;
   box-sizing: border-box;
-  animation: scaleUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  animation: scaleUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-close-btn {
@@ -50,7 +48,7 @@
 
 .modal-close-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--input-bg);
 }
 
 .modal-card h3 {
@@ -95,9 +93,9 @@
 
 .modal-form-input:focus {
   outline: none;
-  border-color: #00f2fe;
-  background: var(--input-bg);
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+  border-color: var(--accent);
+  background: var(--card-bg);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 .modal-alert {
@@ -138,14 +136,12 @@
 }
 
 .modal-btn.primary {
-  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+  background: var(--accent);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
 }
 
 .modal-btn.primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 242, 254, 0.35);
+  background: var(--accent-dark);
 }
 
 .modal-btn.secondary {
@@ -155,7 +151,7 @@
 }
 
 .modal-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border-color);
   color: var(--text-primary);
 }
 

@@ -8,42 +8,33 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: Inter, system-ui, sans-serif;
   box-sizing: border-box;
 }
 
 /* Switcher Trigger Button */
 .layer-trigger-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
   color: var(--text-color);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   z-index: 2;
 }
 
 .layer-trigger-btn:hover {
-  background: rgba(0, 242, 254, 0.1);
-  border-color: #00f2fe;
-  color: #00f2fe;
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
-  transform: translateY(-1px);
+  background: #eef2ff;
+  color: var(--accent);
 }
 
 .layer-trigger-btn.active {
-  background: rgba(0, 242, 254, 0.15);
-  border-color: #00f2fe;
-  color: #00f2fe;
-  box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+  background: #eef2ff;
+  color: var(--accent);
 }
 
 /* Expanded Inline Panel options list */
@@ -54,9 +45,8 @@
   border: 1px solid var(--border-color);
   padding: 8px;
   border-radius: 12px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 25px var(--shadow-color);
-  animation: slideLeftDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px var(--shadow-color);
+  animation: slideLeftDrawer 0.2s ease;
   box-sizing: border-box;
   z-index: 1;
 }
@@ -71,27 +61,28 @@
   height: 56px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--input-bg);
   cursor: pointer;
   user-select: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   box-sizing: border-box;
 }
 
 .map-style-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
 .map-style-card.selected {
-  background: rgba(0, 242, 254, 0.05);
-  border-color: #00f2fe;
-  box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+  background: #eef2ff;
+  border-color: var(--accent);
 }
 
 .style-card-icon {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
 }
 
 .style-card-name {
@@ -102,8 +93,9 @@
   text-align: center;
 }
 
-.map-style-card.selected .style-card-name {
-  color: #00f2fe;
+.map-style-card.selected .style-card-name,
+.map-style-card.selected .style-card-icon {
+  color: var(--accent);
 }
 
 /* Animations */
