@@ -123,6 +123,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Media files (uploaded/extracted GIS data)
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Django REST Framework & JWT Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

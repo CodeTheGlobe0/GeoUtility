@@ -1,27 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MapComponent from './components/MapComponent';
+import CesiumGlobe from './components/CesiumGlobe';
 import LoginComponent from './components/LoginComponent';
 import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
 import DpsLeftPanel from './components/DpsLeftPanel';
 import DpsBottomPanel from './components/DpsBottomPanel';
 import ProfileModal from './components/ProfileModal';
 import AdminDashboard from './components/AdminDashboard';
+import ValidateModal from './components/ValidateModal';
+import HomeDashboard from './components/HomeDashboard';
 import { API_ENDPOINTS } from './config';
 import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [theme, setTheme] = useState('dark');
-  
+
   // Navigation Tabs State
   const [activeTab, setActiveTab] = useState('home'); // 'home' | 'data-qc'
   
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [validateModalOpen, setValidateModalOpen] = useState(false);
+  const [dashboardVisible, setDashboardVisible] = useState(true);
 
-  // Sidebar and Layer States
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Home command-center dashboard data: real feature picks from the globe,
+  // and a running history of real validation calls (both start empty).
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [validationHistory, setValidationHistory] = useState([]);
+
+  const handleFeatureSelect = useCallback((feature) => {
+    setSelectedFeature(feature);
+  }, []);
+
+  const handleValidationResult = useCallback((entry) => {
+    setValidationHistory((prev) => [entry, ...prev].slice(0, 20));
+  }, []);
+
+  // Data QC map layer state (basemap switching now only applies to that tab)
   const [activeBaseLayer, setActiveBaseLayer] = useState('osm');
   const [showGraticule, setShowGraticule] = useState(false);
 
@@ -42,19 +57,7 @@ function App() {
         console.error('Failed to parse stored user:', err);
       }
     }
-
-    // Initialize and apply theme
-    const storedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(storedTheme);
-    document.documentElement.setAttribute('data-theme', storedTheme);
   }, []);
-
-  const handleThemeToggle = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
-  };
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -123,7 +126,7 @@ function App() {
     setUser(null);
     setProfileModalOpen(false);
     setAdminModalOpen(false);
-    setSidebarOpen(false);
+    setValidateModalOpen(false);
     setActiveTab('home');
     setDpsResultsVisible(false);
     setDpsStatusMode(null);
@@ -136,33 +139,34 @@ function App() {
           {/* Top navigation header */}
           <Navbar
             user={user}
-            theme={theme}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            onThemeToggle={handleThemeToggle}
             onLogoutClick={handleLogout}
             onProfileClick={() => setProfileModalOpen(true)}
             onAdminClick={() => setAdminModalOpen(true)}
+            onValidateClick={() => setValidateModalOpen(true)}
+            dashboardVisible={dashboardVisible}
+            onDashboardToggle={() => setDashboardVisible((v) => !v)}
+            dark={activeTab === 'home'}
           />
 
-          {/* Render Home Map controls or DDA-style DPS Portal overlays */}
-          {activeTab === 'home' ? (
-            <Sidebar
-              isOpen={sidebarOpen}
-              onToggle={() => setSidebarOpen(!sidebarOpen)}
-              activeBaseLayer={activeBaseLayer}
-              onBaseLayerChange={setActiveBaseLayer}
-              showGraticule={showGraticule}
-              onGraticuleToggle={setShowGraticule}
+          {/* Command-center style dashboard overlay, Home tab only */}
+          {activeTab === 'home' && dashboardVisible && (
+            <HomeDashboard
+              onUploadClick={() => setValidateModalOpen(true)}
+              selectedFeature={selectedFeature}
+              validationHistory={validationHistory}
             />
-          ) : (
+          )}
+
+          {activeTab !== 'home' && (
             <>
               {/* Left Quality Check Panel */}
               <DpsLeftPanel
                 onProcessComplete={handleDpsProcessComplete}
                 onAreaChange={handleDpsAreaChange}
               />
-              
+
               {/* Bottom Collapsible Results Data Grid */}
               <DpsBottomPanel
                 showResults={dpsResultsVisible}
@@ -173,17 +177,20 @@ function App() {
             </>
           )}
 
-          {/* Map layout beneath the navbar */}
+          {/* Map layout beneath the navbar: 3D Cesium globe on Home, 2D plot map on Data QC */}
           <div className="app-map-wrapper">
-            <MapComponent
-              activeBaseLayer={activeBaseLayer}
-              onBaseLayerChange={setActiveBaseLayer}
-              showGraticule={showGraticule}
-              activeTab={activeTab}
-              dpsArea={dpsArea}
-              dpsStatus={dpsStatusMode}
-              zoomToPlot={zoomToPlotNumber}
-            />
+            {activeTab === 'home' ? (
+              <CesiumGlobe onFeatureSelect={handleFeatureSelect} />
+            ) : (
+              <MapComponent
+                activeBaseLayer={activeBaseLayer}
+                onBaseLayerChange={setActiveBaseLayer}
+                showGraticule={showGraticule}
+                dpsArea={dpsArea}
+                dpsStatus={dpsStatusMode}
+                zoomToPlot={zoomToPlotNumber}
+              />
+            )}
           </div>
 
           {/* Modal overlays */}
@@ -197,6 +204,14 @@ function App() {
           {adminModalOpen && user.is_superuser && (
             <AdminDashboard
               onClose={() => setAdminModalOpen(false)}
+            />
+          )}
+
+          {validateModalOpen && (
+            <ValidateModal
+              onClose={() => setValidateModalOpen(false)}
+              user={user}
+              onResult={handleValidationResult}
             />
           )}
         </div>

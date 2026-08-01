@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DpsLeftPanel.css';
+import { IconFolder, IconSpreadsheet, IconDraft, IconZap, IconDownload } from './Icons';
 
 const DpsLeftPanel = ({ onProcessComplete, onAreaChange }) => {
   const [area, setArea] = useState('haven');
@@ -86,12 +87,12 @@ const DpsLeftPanel = ({ onProcessComplete, onAreaChange }) => {
     // Final outcome step
     setTimeout(() => {
       if (area === 'haven') {
-        const finalStep = { text: '✔ QC Completed without Errors!', type: 'success' };
+        const finalStep = { text: '[OK] QC Completed without Errors!', type: 'success' };
         setLogs((prev) => [...prev, finalStep]);
         setIsRunning(false);
         onProcessComplete('haven', 'success');
       } else {
-        const finalStep = { text: '✖ QC Finished with Errors! Please fix mentioned plots.', type: 'error' };
+        const finalStep = { text: '[ERROR] QC Finished with Errors! Please fix mentioned plots.', type: 'error' };
         setLogs((prev) => [...prev, finalStep]);
         setIsRunning(false);
         onProcessComplete('studio-city', 'errors');
@@ -147,7 +148,7 @@ const DpsLeftPanel = ({ onProcessComplete, onAreaChange }) => {
         className={`dps-upload-card ${excelFile ? 'has-file' : ''}`}
         onClick={!isRunning ? handleUploadExcel : null}
       >
-        <span className="upload-icon">{excelFile ? '📊' : '📁'}</span>
+        <span className="upload-icon">{excelFile ? <IconSpreadsheet size={20} /> : <IconFolder size={20} />}</span>
         <div className="upload-meta">
           <span className="upload-title">Upload Excel file</span>
           <span className="upload-desc">
@@ -161,7 +162,7 @@ const DpsLeftPanel = ({ onProcessComplete, onAreaChange }) => {
         className={`dps-upload-card ${cadFile ? 'has-file' : ''}`}
         onClick={!isRunning ? handleUploadCad : null}
       >
-        <span className="upload-icon">{cadFile ? '📐' : '📁'}</span>
+        <span className="upload-icon">{cadFile ? <IconDraft size={20} /> : <IconFolder size={20} />}</span>
         <div className="upload-meta">
           <span className="upload-title">Upload CAD file</span>
           <span className="upload-desc">
@@ -176,7 +177,7 @@ const DpsLeftPanel = ({ onProcessComplete, onAreaChange }) => {
         disabled={isRunning || !excelFile || !cadFile}
         onClick={handleStartProcess}
       >
-        {isRunning ? 'Processing...' : '⚡ Start Process'}
+        {isRunning ? 'Processing...' : <><IconZap size={14} /> Start Process</>}
       </button>
 
       {/* Terminal logs console screen */}
@@ -195,7 +196,7 @@ const DpsLeftPanel = ({ onProcessComplete, onAreaChange }) => {
 
       {/* Download button template */}
       <button className="dps-download-btn" disabled={isRunning}>
-        📥 Download Standard CAD / Excel
+        <IconDownload size={14} /> Download Standard CAD / Excel
       </button>
     </div>
   );

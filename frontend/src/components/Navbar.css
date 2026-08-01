@@ -1,25 +1,21 @@
 /* Navbar Styling */
 
 .navbar {
-  height: 50px;
+  height: 44px;
   width: 100vw;
   background: var(--navbar-bg);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 40px;
+  padding: 0 20px;
   box-sizing: border-box;
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
   position: absolute;
   top: 0;
   left: 0;
   z-index: 1500;
   color: var(--text-primary);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
-  font-family: Inter, system-ui, sans-serif;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 1px 2px var(--shadow-color);
 }
 
 /* Left Side: Logo Branding */
@@ -32,19 +28,17 @@
 }
 
 .brand-logo-img {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   object-fit: cover;
 }
 
 .brand-name {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  background: linear-gradient(90deg, var(--text-primary) 0%, var(--text-color) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 /* Center Navigation Tabs */
@@ -62,22 +56,23 @@
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.25s ease;
 }
 
 .nav-tab-btn:hover {
   color: var(--text-color);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(16, 24, 40, 0.04);
 }
 
 .nav-tab-btn.active {
-  color: #00f2fe;
-  background: rgba(0, 242, 254, 0.08);
+  color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 1px 3px var(--shadow-color);
 }
 
 .nav-tab-btn.placeholder {
@@ -98,72 +93,70 @@
   position: relative;
 }
 
-/* Icon Buttons (Admin Control, Theme Toggle) */
-.admin-control-btn, .theme-toggle-btn {
+/* Icon Buttons (Admin Control, Validate Data) */
+.admin-control-btn, .validate-control-btn {
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-color);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.admin-control-btn:hover, .theme-toggle-btn:hover {
-  background: rgba(0, 242, 254, 0.1);
-  border-color: #00f2fe;
-  color: #00f2fe;
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
-  transform: translateY(-1px);
+.admin-control-btn:hover, .validate-control-btn:hover {
+  background: #eef2ff;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.validate-control-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
 }
 
 /* Avatar Badge styling */
 .avatar-badge {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-  color: #0f172a;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #ffffff;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.1);
   user-select: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   text-transform: uppercase;
 }
 
 .avatar-badge:hover {
-  border-color: #00f2fe;
-  box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
-  transform: scale(1.03);
+  background: var(--accent-dark);
 }
 
 /* Profile Dropdown panel styling */
 .profile-dropdown {
   position: absolute;
-  top: 45px;
+  top: 38px;
   right: 0;
   width: 250px;
   background: var(--modal-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 15px 30px var(--shadow-color);
-  backdrop-filter: blur(20px);
+  box-shadow: 0 12px 28px var(--shadow-color);
   z-index: 1600;
   display: flex;
   flex-direction: column;
-  animation: slideDownDropdown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  animation: slideDownDropdown 0.2s ease;
 }
 
 /* Dropdown User Profile Card */
@@ -209,7 +202,7 @@
 }
 
 .dropdown-action-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--input-bg);
   color: var(--text-primary);
 }
 
@@ -236,4 +229,83 @@
   .navbar {
     padding: 0 20px;
   }
+}
+
+/* Dark variant — used on the Home tab to match the command-center dashboard look */
+.navbar.navbar-dark {
+  background: rgba(11, 19, 41, 0.96);
+  border-bottom-color: rgba(94, 234, 212, 0.18);
+  color: #f1f5f9;
+}
+
+.navbar-dark .brand-name {
+  color: #f1f5f9;
+}
+
+.navbar-dark .navbar-tabs {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(94, 234, 212, 0.18);
+}
+
+.navbar-dark .nav-tab-btn {
+  color: #94a3b8;
+}
+
+.navbar-dark .nav-tab-btn:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.navbar-dark .nav-tab-btn.active {
+  color: #5eead4;
+  background: rgba(94, 234, 212, 0.12);
+  box-shadow: none;
+}
+
+.navbar-dark .nav-tab-btn.placeholder:hover {
+  color: #94a3b8;
+}
+
+.navbar-dark .admin-control-btn,
+.navbar-dark .validate-control-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(94, 234, 212, 0.18);
+  color: #cbd5e1;
+}
+
+.navbar-dark .admin-control-btn:hover,
+.navbar-dark .validate-control-btn:hover {
+  background: rgba(94, 234, 212, 0.12);
+  border-color: #5eead4;
+  color: #5eead4;
+}
+
+.navbar-dark .validate-control-btn.active {
+  background: #34d399;
+  border-color: #34d399;
+  color: #0b1329;
+}
+
+.navbar-dark .profile-dropdown {
+  background: rgba(15, 25, 48, 0.98);
+  border-color: rgba(94, 234, 212, 0.18);
+}
+
+.navbar-dark .dropdown-username,
+.navbar-dark .dropdown-action-btn {
+  color: #e2e8f0;
+}
+
+.navbar-dark .dropdown-email {
+  color: #94a3b8;
+}
+
+.navbar-dark .dropdown-profile-info,
+.navbar-dark .dropdown-action-btn.logout-action {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-dark .dropdown-action-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
 }

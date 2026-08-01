@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Navbar.css';
 import ytIcon from '../assets/yticon.png';
+import { IconShield, IconUpload, IconUser, IconLogOut, IconGrid } from './Icons';
 
-const Navbar = ({ user, theme, onThemeToggle, onLogoutClick, onProfileClick, onAdminClick, activeTab, onTabChange }) => {
+const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onValidateClick, activeTab, onTabChange, dashboardVisible, onDashboardToggle, dark }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -51,8 +52,15 @@ const Navbar = ({ user, theme, onThemeToggle, onLogoutClick, onProfileClick, onA
     return 'Authorized User';
   };
 
+  const getRoleBadgeClass = () => {
+    if (!user) return 'user';
+    if (user.is_superuser) return 'superuser';
+    if (user.is_staff) return 'staff';
+    return 'user';
+  };
+
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${dark ? 'navbar-dark' : ''}`}>
       {/* Left Section: Logo */}
       <div className="navbar-brand">
         <img src={ytIcon} alt="GeoUtility Logo" className="brand-logo-img" />
@@ -92,13 +100,24 @@ const Navbar = ({ user, theme, onThemeToggle, onLogoutClick, onProfileClick, onA
       {/* Right Section: User Controls */}
       {user && (
         <div className="navbar-controls" ref={dropdownRef}>
-          {/* Theme Toggle Button */}
+          {/* Dashboard overlay toggle (Home tab only) */}
+          {activeTab === 'home' && (
+            <button
+              className={`validate-control-btn ${dashboardVisible ? 'active' : ''}`}
+              title={dashboardVisible ? 'Hide Dashboard Overlay' : 'Show Dashboard Overlay'}
+              onClick={onDashboardToggle}
+            >
+              <IconGrid size={15} />
+            </button>
+          )}
+
+          {/* Validate GIS Data sidebar trigger */}
           <button
-            className="theme-toggle-btn"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            onClick={onThemeToggle}
+            className="validate-control-btn"
+            title="Validate GIS Data Upload"
+            onClick={onValidateClick}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            <IconUpload size={15} />
           </button>
 
           {/* Admin panel gear button (Visible to superusers only) */}
@@ -108,7 +127,7 @@ const Navbar = ({ user, theme, onThemeToggle, onLogoutClick, onProfileClick, onA
               title="Admin Panel Controls"
               onClick={handleAdminPanel}
             >
-              🛡️
+              <IconShield size={15} />
             </button>
           )}
 
@@ -127,17 +146,17 @@ const Navbar = ({ user, theme, onThemeToggle, onLogoutClick, onProfileClick, onA
               <div className="dropdown-profile-info">
                 <span className="dropdown-username">{user.username}</span>
                 <span className="dropdown-email">{user.email || 'no email registered'}</span>
-                <span className="role-badge staff" style={{ display: 'inline-block', marginTop: '5px' }}>
+                <span className={`role-badge ${getRoleBadgeClass()}`} style={{ display: 'inline-block', marginTop: '5px' }}>
                   {getRoleText()}
                 </span>
               </div>
 
               <button className="dropdown-action-btn" onClick={handleProfileUpdate}>
-                👤 Edit Profile
+                <IconUser size={16} /> Edit Profile
               </button>
 
               <button className="dropdown-action-btn logout-action" onClick={handleLogout}>
-                🚪 Sign Out
+                <IconLogOut size={16} /> Sign Out
               </button>
             </div>
           )}

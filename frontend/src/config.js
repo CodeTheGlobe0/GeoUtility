@@ -7,4 +7,5 @@ export const API_ENDPOINTS = {
   LOGOUT: `${API_BASE_URL}/api/auth/logout/`,
   TOKEN_REFRESH: `${API_BASE_URL}/api/token/refresh/`,
   USERS: `${API_BASE_URL}/api/auth/users/`,
+  VALIDATE_DATA: `${API_BASE_URL}/api/data-process/validate/`,
 };

@@ -2,30 +2,27 @@
 
 .sidebar-toggle-btn {
   position: fixed;
-  top: 65px;
+  top: 56px;
   left: 15px;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: var(--input-bg);
+  border-radius: 10px;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-color);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
   z-index: 1100;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar-toggle-btn:hover {
-  background: rgba(0, 242, 254, 0.1);
-  border-color: #00f2fe;
-  color: #00f2fe;
-  box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+  background: #eef2ff;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .sidebar-toggle-btn.open {
@@ -35,15 +32,14 @@
 /* Floating Sidebar Container */
 .floating-sidebar {
   position: fixed;
-  top: 65px;
+  top: 56px;
   left: 15px;
   bottom: 15px;
   width: 280px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px var(--shadow-color);
-  backdrop-filter: blur(25px);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px var(--shadow-color);
   z-index: 1000;
   box-sizing: border-box;
   padding: 24px;
@@ -121,28 +117,27 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   cursor: pointer;
   user-select: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   box-sizing: border-box;
 }
 
 .layer-option-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent);
 }
 
 .layer-option-card.active {
-  background: rgba(0, 242, 254, 0.05);
-  border-color: #00f2fe;
+  background: #eef2ff;
+  border-color: var(--accent);
 }
 
 .layer-option-card input[type="radio"] {
   width: 16px;
   height: 16px;
-  accent-color: #00f2fe;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 

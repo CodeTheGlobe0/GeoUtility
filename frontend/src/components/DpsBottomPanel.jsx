@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './DpsBottomPanel.css';
+import { IconChevronUp, IconChevronDown, IconMapPin, IconSave, IconEdit, IconXCircle, IconCheckCircle } from './Icons';
 
 const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -130,7 +131,7 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
             onClick={() => setCollapsed(!collapsed)}
             title={collapsed ? 'Expand Bottom Panel' : 'Collapse Bottom Panel'}
           >
-            {collapsed ? '▲' : '▼'}
+            {collapsed ? <IconChevronUp size={15} /> : <IconChevronDown size={15} />}
           </button>
         </div>
       </div>
@@ -175,9 +176,9 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
                           title="Zoom to Plot geometry"
                           onClick={() => onZoomToPlot(plot.number)}
                         >
-                          📍
+                          <IconMapPin size={14} />
                         </button>
-                        
+
                         {/* Edit inline */}
                         {editingId === plot.id ? (
                           <button
@@ -186,7 +187,7 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
                             onClick={() => handleSaveClick(plot.id)}
                             style={{ color: '#34d399' }}
                           >
-                            💾
+                            <IconSave size={14} />
                           </button>
                         ) : (
                           <button
@@ -194,7 +195,7 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
                             title="Edit Plot Info"
                             onClick={() => handleEditClick(plot)}
                           >
-                            ✏️
+                            <IconEdit size={14} />
                           </button>
                         )}
 
@@ -204,7 +205,7 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
                           title="Delete plot"
                           onClick={() => handleDeleteClick(plot.id)}
                         >
-                          ❌
+                          <IconXCircle size={14} />
                         </button>
                       </td>
 
@@ -268,8 +269,8 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
             <div>
               {/* Errors list table */}
               {area === 'haven' ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: '#34d399' }}>
-                  ✔ No geodatabase validation errors found.
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px', textAlign: 'center', color: '#34d399' }}>
+                  <IconCheckCircle size={16} /> No geodatabase validation errors found.
                 </div>
               ) : (
                 <table className="dps-grid-table">
@@ -292,7 +293,7 @@ const DpsBottomPanel = ({ showResults, statusMode, area, onZoomToPlot }) => {
                         </td>
                         <td>{err.row}</td>
                         <td style={{ cursor: 'pointer', fontWeight: 'bold' }} onClick={() => onZoomToPlot('6757695.01')}>
-                          {err.plot} {err.plot && '📍'}
+                          {err.plot} {err.plot && <IconMapPin size={12} style={{ verticalAlign: 'middle' }} />}
                         </td>
                         <td style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{err.val}</td>
                         <td style={{ color: '#f87171' }}>{err.desc}</td>

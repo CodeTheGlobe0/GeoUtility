@@ -8,16 +8,14 @@
   height: 270px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 18px;
-  box-shadow: 0 10px 40px var(--shadow-color);
-  backdrop-filter: blur(25px);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px var(--shadow-color);
   z-index: 1000;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  font-family: Inter, system-ui, sans-serif;
   box-sizing: border-box;
-  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dps-bottom-panel.collapsed {
@@ -64,7 +62,7 @@
 }
 
 .dps-tab-btn.active {
-  color: #00f2fe;
+  color: var(--accent);
 }
 
 .dps-tab-btn.active::after {
@@ -74,12 +72,12 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #00f2fe;
+  background: var(--accent);
 }
 
 .badge-count {
   background: #f87171;
-  color: #000000;
+  color: #ffffff;
   font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 6px;
@@ -152,11 +150,11 @@
 }
 
 .dps-grid-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--input-bg);
 }
 
 .dps-grid-table tr.totals-row {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--input-bg);
   font-weight: 700;
 }
 
@@ -165,7 +163,9 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-right: 6px;
   opacity: 0.7;
   transition: all 0.2s ease;
@@ -187,7 +187,7 @@
 .export-flat-btn {
   background: transparent;
   border: none;
-  color: #00f2fe;
+  color: var(--accent);
   font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
@@ -201,7 +201,7 @@
 
 /* Input boxes inside editable cells */
 .table-cell-input {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 0.75rem;
@@ -213,5 +213,5 @@
 
 .table-cell-input:focus {
   outline: none;
-  border-color: #00f2fe;
+  border-color: var(--accent);
 }

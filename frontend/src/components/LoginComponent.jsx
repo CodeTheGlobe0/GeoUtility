@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { API_ENDPOINTS } from '../config';
+import { IconUser, IconKey, IconSparkle } from './Icons';
+import loginBg from '../assets/login_bg.jpg';
+import ytIcon from '../assets/yticon.png';
 import './LoginComponent.css';
 
 const LoginComponent = ({ onLoginSuccess }) => {
@@ -55,73 +58,72 @@ const LoginComponent = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="login-container">
-      {/* Left Pane: Artwork Background */}
-      <div className="login-graphic-pane">
-        <div className="graphic-content">
-          <h1>GeoUtility Portal</h1>
-          <p>
-            An advanced platform for geographical data operations, visualization, and network analytics. 
-            Sign in to access interactive mapping utilities, staff administrative resources, and automated workflows.
-          </p>
-        </div>
+    <div className="login-page" style={{ backgroundImage: `url(${loginBg})` }}>
+      <div className="login-page-overlay" />
+
+      {/* Top-left brand lockup over the map */}
+      <div className="login-brand-corner">
+        <img src={ytIcon} alt="GeoUtility Logo" className="login-logo-img" />
+        <span className="login-brand-text">GeoUtility</span>
       </div>
 
-      {/* Right Pane: Authentication Form */}
-      <div className="login-form-pane">
-        <div className="login-card">
-          <div className="login-header">
-            <h2>Welcome Back</h2>
-            <p>Please enter your credentials to login</p>
+      {/* Centered auth card */}
+      <div className="login-card">
+        <div className="login-card-brand">
+          <img src={ytIcon} alt="GeoUtility Logo" className="login-logo-img card" />
+          <span className="login-brand-text card">GeoUtility</span>
+        </div>
+        <p className="login-card-subtitle">Validate Your Data</p>
+
+        {error && <div className="login-error-banner">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="login-input-group">
+            <IconUser size={18} className="login-input-icon" />
+            <input
+              type="text"
+              className="login-input"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              autoComplete="username"
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {error && (
-              <div className="error-banner">
-                <span>{error}</span>
-              </div>
-            )}
+          <div className="login-input-group">
+            <IconKey size={18} className="login-input-icon" />
+            <input
+              type="password"
+              className="login-input"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              autoComplete="current-password"
+              required
+            />
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="username">Username</label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  id="username"
-                  className="form-input"
-                  placeholder="Enter username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={loading}
-                  autoComplete="username"
-                  required
-                />
-              </div>
-            </div>
+          <div className="login-forgot-row">
+            <span className="login-inert-link" title="Coming soon">Forgot Password?</span>
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-wrapper">
-                <input
-                  type="password"
-                  id="password"
-                  className="form-input"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
-            </div>
+          <button type="submit" className="login-submit-btn" disabled={loading}>
+            {loading && <span className="login-btn-spinner" />}
+            {loading ? 'Signing In...' : 'Login'}
+          </button>
+        </form>
 
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Sign In'}
-            </button>
-          </form>
+        <div className="login-footer-links">
+          <p>Need access? <span className="login-inert-link" title="Contact your system administrator">Contact Admin</span></p>
+          <p>Need Help? <span className="login-inert-link" title="Support coming soon">Contact Support</span></p>
         </div>
       </div>
+
+      <span className="login-page-caption">GeoUtility &middot; GIS Data Validation Platform</span>
+      <IconSparkle size={20} className="login-page-sparkle" />
     </div>
   );
 };
