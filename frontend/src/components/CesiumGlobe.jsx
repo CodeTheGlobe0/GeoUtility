@@ -4,6 +4,10 @@ import "cesium/Build/Cesium/Widgets/widgets.css";
 import "./CesiumGlobe.css";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+// Opt-in only: Mapbox satellite tiles are a paid/metered service, so they stay
+// off by default and are only used when this is explicitly turned on (e.g.
+// once an admin-panel setting exists to toggle imagery providers per user/org).
+const USE_MAPBOX = import.meta.env.VITE_USE_MAPBOX_SATELLITE === 'true';
 const KMZ_URL = "/AGI_HQ.kmz";
 // Same Dubai, UAE coordinates used as the default view in MapComponent.jsx (Data QC tab)
 const TARGET_DESTINATION = Cesium.Cartesian3.fromDegrees(
@@ -12,10 +16,12 @@ const TARGET_DESTINATION = Cesium.Cartesian3.fromDegrees(
   15000,
 );
 
-// No Cesium ion account needed: use Mapbox satellite raster tiles for the
-// photorealistic globe look, falling back to free OSM tiles if no token is set.
+// No Cesium ion account needed. Default imagery is Esri/ArcGIS World Imagery —
+// the same free, no-API-key satellite service already used for the Data QC
+// map's "Satellite" basemap in MapComponent.jsx. Mapbox is only used when
+// explicitly enabled via VITE_USE_MAPBOX_SATELLITE, since it's a paid service.
 const buildImageryProvider = () => {
-  if (MAPBOX_TOKEN) {
+  if (USE_MAPBOX && MAPBOX_TOKEN) {
     return new Cesium.UrlTemplateImageryProvider({
       url: `https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.png?access_token=${MAPBOX_TOKEN}`,
       credit: "© Mapbox © OpenStreetMap",
@@ -23,8 +29,8 @@ const buildImageryProvider = () => {
     });
   }
   return new Cesium.UrlTemplateImageryProvider({
-    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    credit: "© OpenStreetMap contributors",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    credit: "Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
     maximumLevel: 19,
   });
 };
