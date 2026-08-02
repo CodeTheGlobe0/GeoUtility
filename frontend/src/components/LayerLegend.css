@@ -1,0 +1,101 @@
+/* Floating layer-color legend: collapsed button + expandable drawer.
+   Uses the shared --card-bg/--border-color/--text-color custom properties
+   so it matches whichever theme (dark Home, light/dark Data QC) is active. */
+
+.layer-legend-container {
+  position: relative;
+  z-index: 1000;
+}
+
+.layer-legend-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px var(--shadow-color);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.layer-legend-btn:hover,
+.layer-legend-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.layer-legend-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  max-width: 240px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 28px var(--shadow-color);
+  box-sizing: border-box;
+  animation: legendFadeIn 0.15s ease-out;
+}
+
+.layer-legend-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.layer-legend-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.layer-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layer-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.layer-legend-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-legend-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.layer-legend-panel::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+@keyframes legendFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

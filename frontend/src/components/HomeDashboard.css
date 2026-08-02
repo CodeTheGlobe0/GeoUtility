@@ -8,35 +8,42 @@
   z-index: 900;
   pointer-events: none;
   font-family: "Inter", sans-serif;
+  /* Shared fluid sizing tokens — scale with the viewport instead of ever
+     hiding the dashboard on small screens. */
+  --hcd-col-width: clamp(160px, 17vw, 260px);
+  --hcd-gap: clamp(8px, 1.2vw, 14px);
+  --hcd-bottom-h: clamp(120px, 20vh, 175px);
+  --hcd-side-pad: clamp(8px, 1.2vw, 15px);
+  --hcd-toolbar-clear: clamp(60px, 6vw, 75px);
 }
 
 .hcd-col {
   position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  width: 250px;
+  gap: var(--hcd-gap);
+  width: var(--hcd-col-width);
 }
 
 .hcd-col-left {
-  top: 104px;
-  left: 15px;
-  bottom: 15px;
+  top: clamp(64px, 9vh, 104px);
+  left: var(--hcd-side-pad);
+  bottom: var(--hcd-side-pad);
 }
 
 .hcd-col-right {
-  top: 56px;
-  right: 75px;
+  top: clamp(48px, 7vh, 56px);
+  right: var(--hcd-toolbar-clear);
 }
 
 .hcd-bottom-row {
   position: absolute;
-  bottom: 15px;
-  left: 280px;
-  right: 75px;
+  bottom: var(--hcd-side-pad);
+  left: calc(var(--hcd-side-pad) + var(--hcd-col-width) + var(--hcd-gap));
+  right: var(--hcd-toolbar-clear);
   display: flex;
-  gap: 14px;
-  height: 168px;
+  gap: var(--hcd-gap);
+  height: var(--hcd-bottom-h);
 }
 
 .hcd-card {
@@ -51,6 +58,16 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: box-shadow 0.2s ease;
+}
+
+.hcd-card:not(.dragging) {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.hcd-card.dragging {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(94, 234, 212, 0.5);
+  cursor: grabbing;
 }
 
 .hcd-card-accent {
@@ -58,21 +75,33 @@
   box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.12), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* Fixed sizing so populating/clearing data never shifts the layout */
+/* Fluid sizing so populating/clearing data never shifts the layout, and
+   cards shrink gracefully on small screens instead of ever being hidden */
 .hcd-card-sm {
-  min-height: 96px;
+  min-height: clamp(80px, 12vh, 96px);
   flex-shrink: 0;
   justify-content: space-between;
 }
 
 .hcd-card-lg {
-  min-height: 230px;
+  min-height: clamp(160px, 30vh, 230px);
   flex: 1;
 }
 
 .hcd-bottom-card {
   flex: 1;
   min-width: 0;
+}
+
+/* Legend grows taller than the other bottom-row cards as more layers are
+   loaded — anchored to the row's bottom edge (align-self overrides the
+   row's default stretch) so it expands upward instead of stretching every
+   card in the row, capped at half the viewport with internal scroll past that. */
+.hcd-legend-card {
+  align-self: flex-end;
+  height: auto;
+  min-height: var(--hcd-bottom-h);
+  max-height: 50vh;
 }
 
 .hcd-card-header {
@@ -86,6 +115,13 @@
   color: #94a3b8;
   margin-bottom: 10px;
   flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.hcd-card-header:active {
+  cursor: grabbing;
 }
 
 .hcd-card-header em {
@@ -347,6 +383,36 @@
   line-height: 1.4;
 }
 
+.hcd-legend-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.hcd-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hcd-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.hcd-legend-label {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hcd-upload-btn {
   margin-top: 8px;
   flex-shrink: 0;
@@ -370,9 +436,17 @@
   background: #047857;
 }
 
-/* Hide on narrow / short viewports rather than render a broken overlay */
-@media (max-width: 1100px), (max-height: 620px) {
-  .hcd-overlay {
-    display: none;
+/* Very small screens: tighten padding/fonts further rather than hide anything.
+   Cards are always draggable too, so users can spread them out manually
+   if the auto layout still feels tight. */
+@media (max-width: 700px), (max-height: 480px) {
+  .hcd-card {
+    padding: 10px 12px;
+  }
+  .hcd-big-number {
+    font-size: 1.5rem;
+  }
+  .hcd-empty-subtitle {
+    max-width: 140px;
   }
 }

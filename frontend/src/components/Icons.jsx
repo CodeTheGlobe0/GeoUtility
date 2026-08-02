@@ -248,6 +248,18 @@ export const IconChevronDown = ({ size = 18, ...props }) => (
   </svg>
 );
 
+export const IconChevronLeft = ({ size = 18, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M15 6l-6 6 6 6" />
+  </svg>
+);
+
+export const IconChevronRight = ({ size = 18, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+);
+
 export const IconGrid = ({ size = 18, ...props }) => (
   <svg {...base(size)} {...props}>
     <rect x="3" y="3" width="7.5" height="7.5" rx="1.2" />
@@ -263,6 +275,15 @@ export const IconKey = ({ size = 18, ...props }) => (
     <path d="M9.5 12.5L18 4" />
     <path d="M14.5 8L17 10.5" />
     <path d="M17.5 5L20 7.5" />
+  </svg>
+);
+
+export const IconPalette = ({ size = 18, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M12 3.5c-4.7 0-8.5 3.6-8.5 8 0 3 2.1 4.8 4.3 4.8.9 0 1.4-.5 1.4-1.2 0-.6-.4-.9-.4-1.6 0-.7.6-1.3 1.4-1.3h1.7c2.7 0 5.1-1.9 5.1-4.8 0-3.1-2.6-3.9-5-3.9z" />
+    <circle cx="8.2" cy="9.8" r="0.9" fill="currentColor" stroke="none" />
+    <circle cx="11.6" cy="7.3" r="0.9" fill="currentColor" stroke="none" />
+    <circle cx="15.2" cy="9.3" r="0.9" fill="currentColor" stroke="none" />
   </svg>
 );
 

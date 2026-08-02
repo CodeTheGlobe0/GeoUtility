@@ -3,7 +3,7 @@
 .dps-bottom-panel {
   position: fixed;
   bottom: 15px;
-  left: 360px; /* Positioned to the right of the Left Panel (width 330px + margin) */
+  left: 15px;
   right: 15px;
   height: 270px;
   background: var(--card-bg);

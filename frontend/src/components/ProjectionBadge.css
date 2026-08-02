@@ -1,0 +1,25 @@
+/* Small informational badge showing the CRS of the currently loaded upload
+   layer(s). Uses the shared --card-bg/--border-color/etc. tokens so it
+   matches whichever theme (dark Home, light/dark Data QC) is active. */
+
+.projection-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px var(--shadow-color);
+  box-sizing: border-box;
+}
+
+.projection-badge svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}

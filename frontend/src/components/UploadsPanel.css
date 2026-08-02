@@ -1,0 +1,146 @@
+/* Uploads list popup — extends the vmodal-* card look from ValidateModal.css */
+
+.uplist-card {
+  max-width: 520px;
+}
+
+.uplist-upload-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.uplist-body {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.uplist-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.uplist-body::-webkit-scrollbar-thumb {
+  background: rgba(94, 234, 212, 0.25);
+  border-radius: 3px;
+}
+
+.uplist-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding: 30px 10px;
+}
+
+.uplist-empty svg {
+  color: #5eead4;
+}
+
+.uplist-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.uplist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(94, 234, 212, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.uplist-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.uplist-row-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #f1f5f9;
+  word-break: break-all;
+}
+
+.uplist-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}
+
+.uplist-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.uplist-badge.success {
+  background: rgba(52, 211, 153, 0.15);
+  color: #5eead4;
+}
+
+.uplist-badge.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.uplist-badge.pending {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+
+.uplist-row-type {
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.uplist-row-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  color: #5eead4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.uplist-row-btn:hover:not(:disabled) {
+  background: rgba(94, 234, 212, 0.22);
+}
+
+.uplist-row-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .uplist-card {
+    max-width: calc(100vw - 32px);
+  }
+}

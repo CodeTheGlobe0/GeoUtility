@@ -10,5 +10,7 @@ dependencies = [
     "django-cors-headers>=4.9.0",
     "djangorestframework>=3.17.1",
     "djangorestframework-simplejwt>=5.5.1",
+    "geopandas>=1.1.4",
+    "pyogrio>=0.13.0",
     "redis>=8.0.1",
 ]

@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MapComponent from './components/MapComponent';
 import CesiumGlobe from './components/CesiumGlobe';
 import LoginComponent from './components/LoginComponent';
 import Navbar from './components/Navbar';
-import DpsLeftPanel from './components/DpsLeftPanel';
 import DpsBottomPanel from './components/DpsBottomPanel';
 import ProfileModal from './components/ProfileModal';
 import AdminDashboard from './components/AdminDashboard';
 import ValidateModal from './components/ValidateModal';
+import UploadsPanel from './components/UploadsPanel';
 import HomeDashboard from './components/HomeDashboard';
 import { API_ENDPOINTS } from './config';
+import { buildLayerColorMap } from './utils/layerColors';
 import './App.css';
 
 function App() {
@@ -21,7 +22,15 @@ function App() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [validateModalOpen, setValidateModalOpen] = useState(false);
-  const [dashboardVisible, setDashboardVisible] = useState(true);
+  const [uploadsPanelOpen, setUploadsPanelOpen] = useState(false);
+  const [selectedUploadGeojson, setSelectedUploadGeojson] = useState(null);
+
+  // Auto-assigned color per feature layer/class, shared by the Home globe,
+  // the Data QC map, and their legends.
+  const layerColors = useMemo(
+    () => buildLayerColorMap(selectedUploadGeojson?.layers),
+    [selectedUploadGeojson],
+  );
 
   // Home command-center dashboard data: real feature picks from the globe,
   // and a running history of real validation calls (both start empty).
@@ -36,9 +45,22 @@ function App() {
     setValidationHistory((prev) => [entry, ...prev].slice(0, 20));
   }, []);
 
+  // Selecting an upload from the Uploads panel: show its GeoJSON on the
+  // Home globe first. The same data also renders on the Data QC map, so the
+  // user can switch tabs afterwards to inspect it there if they want to.
+  const handleGeojsonSelected = useCallback(({ upload, layers }) => {
+    setSelectedUploadGeojson({ upload, layers });
+    setActiveTab('home');
+  }, []);
+
   // Data QC map layer state (basemap switching now only applies to that tab)
   const [activeBaseLayer, setActiveBaseLayer] = useState('osm');
   const [showGraticule, setShowGraticule] = useState(false);
+
+  // Dark basemaps (Dark Map / Satellite) need dark UI chrome so the navbar,
+  // toolbar, and panels don't clash as white cards floating on a dark map.
+  const isDarkBasemap = activeBaseLayer === 'dark' || activeBaseLayer === 'satellite';
+  const isDarkTheme = activeTab === 'home' || (activeTab === 'data-qc' && isDarkBasemap);
 
   // DDA-style DPS Planning Portal States
   const [dpsResultsVisible, setDpsResultsVisible] = useState(false);
@@ -70,22 +92,6 @@ function App() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     // Reset DPS portal states on tab toggle
-    setDpsResultsVisible(false);
-    setDpsStatusMode(null);
-    setZoomToPlotNumber(null);
-  };
-
-  const handleDpsProcessComplete = (selectedArea, status) => {
-    setDpsStatusMode(status);
-    if (status === 'success' || status === 'errors') {
-      setDpsResultsVisible(true);
-    } else {
-      setDpsResultsVisible(false);
-    }
-  };
-
-  const handleDpsAreaChange = (selectedArea) => {
-    setDpsArea(selectedArea);
     setDpsResultsVisible(false);
     setDpsStatusMode(null);
     setZoomToPlotNumber(null);
@@ -135,7 +141,7 @@ function App() {
   return (
     <div className="App">
       {user ? (
-        <div className="app-main-layout">
+        <div className={`app-main-layout ${isDarkTheme ? 'map-dark-theme' : ''}`}>
           {/* Top navigation header */}
           <Navbar
             user={user}
@@ -144,43 +150,37 @@ function App() {
             onLogoutClick={handleLogout}
             onProfileClick={() => setProfileModalOpen(true)}
             onAdminClick={() => setAdminModalOpen(true)}
-            onValidateClick={() => setValidateModalOpen(true)}
-            dashboardVisible={dashboardVisible}
-            onDashboardToggle={() => setDashboardVisible((v) => !v)}
-            dark={activeTab === 'home'}
+            onUploadsClick={() => setUploadsPanelOpen(true)}
+            dark={isDarkTheme}
           />
 
           {/* Command-center style dashboard overlay, Home tab only */}
-          {activeTab === 'home' && dashboardVisible && (
+          {activeTab === 'home' && (
             <HomeDashboard
-              onUploadClick={() => setValidateModalOpen(true)}
               selectedFeature={selectedFeature}
               validationHistory={validationHistory}
+              userId={user.id}
+              layerColors={layerColors}
             />
           )}
 
           {activeTab !== 'home' && (
-            <>
-              {/* Left Quality Check Panel */}
-              <DpsLeftPanel
-                onProcessComplete={handleDpsProcessComplete}
-                onAreaChange={handleDpsAreaChange}
-              />
-
-              {/* Bottom Collapsible Results Data Grid */}
-              <DpsBottomPanel
-                showResults={dpsResultsVisible}
-                statusMode={dpsStatusMode}
-                area={dpsArea}
-                onZoomToPlot={handleZoomToPlot}
-              />
-            </>
+            <DpsBottomPanel
+              showResults={dpsResultsVisible}
+              statusMode={dpsStatusMode}
+              area={dpsArea}
+              onZoomToPlot={handleZoomToPlot}
+            />
           )}
 
           {/* Map layout beneath the navbar: 3D Cesium globe on Home, 2D plot map on Data QC */}
           <div className="app-map-wrapper">
             {activeTab === 'home' ? (
-              <CesiumGlobe onFeatureSelect={handleFeatureSelect} />
+              <CesiumGlobe
+                onFeatureSelect={handleFeatureSelect}
+                geojsonData={selectedUploadGeojson?.layers}
+                layerColors={layerColors}
+              />
             ) : (
               <MapComponent
                 activeBaseLayer={activeBaseLayer}
@@ -189,6 +189,8 @@ function App() {
                 dpsArea={dpsArea}
                 dpsStatus={dpsStatusMode}
                 zoomToPlot={zoomToPlotNumber}
+                geojsonData={selectedUploadGeojson?.layers}
+                layerColors={layerColors}
               />
             )}
           </div>
@@ -212,6 +214,17 @@ function App() {
               onClose={() => setValidateModalOpen(false)}
               user={user}
               onResult={handleValidationResult}
+            />
+          )}
+
+          {uploadsPanelOpen && (
+            <UploadsPanel
+              onClose={() => setUploadsPanelOpen(false)}
+              onUploadClick={() => {
+                setUploadsPanelOpen(false);
+                setValidateModalOpen(true);
+              }}
+              onGeojsonSelected={handleGeojsonSelected}
             />
           )}
         </div>

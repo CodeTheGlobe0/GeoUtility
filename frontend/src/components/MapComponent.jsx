@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "ol/ol.css";
 import Map from "ol/Map";
 import View from "ol/View";
@@ -11,14 +11,75 @@ import Graticule from "ol/layer/Graticule";
 import Stroke from "ol/style/Stroke";
 import Fill from "ol/style/Fill";
 import Style from "ol/style/Style";
+import CircleStyle from "ol/style/Circle";
 import Text from "ol/style/Text";
 import Feature from "ol/Feature";
+import GeoJSON from "ol/format/GeoJSON";
 import { IconPlus, IconMinus, IconSearch, IconRuler } from "./Icons";
 import Polygon from "ol/geom/Polygon";
 import { defaults as defaultControls } from "ol/control";
+import { defaults as defaultInteractions } from "ol/interaction";
 import { fromLonLat } from "ol/proj";
 import MapLayerSwitcher from "./MapLayerSwitcher";
+import LayerLegend from "./LayerLegend";
+import LayerExplorerPanel from "./LayerExplorerPanel";
+import FeatureAttributePopup from "./FeatureAttributePopup";
+import ProjectionBadge from "./ProjectionBadge";
+import { hexToRgba } from "../utils/layerColors";
 import "./MapComponent.css";
+
+const pickFeatureName = (feature) => {
+  const props = feature.getProperties();
+  return props.name || props.Name || props.NAME || feature.get("__layer") || "Feature";
+};
+
+// Style for one uploaded feature: differentiate by geometry type (GDB/SHP
+// sources can carry points, lines, or polygons) and color by the feature's
+// source layer/class, matching the legend and the Home globe. Wide stroke +
+// brighter fill so a thin low-opacity overlay doesn't get lost against
+// similarly-colored basemap imagery at continent/world-scale zoom.
+const styleForUploadFeature = (geomType, color) => {
+  if (geomType === "Point" || geomType === "MultiPoint") {
+    return new Style({
+      image: new CircleStyle({
+        radius: 6,
+        fill: new Fill({ color }),
+        stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
+      }),
+    });
+  }
+  if (geomType === "LineString" || geomType === "MultiLineString") {
+    return new Style({
+      stroke: new Stroke({ color, width: 4 }),
+    });
+  }
+  return new Style({
+    fill: new Fill({ color: hexToRgba(color, 0.45) }),
+    stroke: new Stroke({ color, width: 3 }),
+  });
+};
+
+// Highlight style applied to whichever feature is selected from the Layer
+// Explorer panel, distinct from every layer's own color so it stands out
+// regardless of which layer it belongs to.
+const styleForSelectedFeature = (geomType) => {
+  if (geomType === "Point" || geomType === "MultiPoint") {
+    return new Style({
+      image: new CircleStyle({
+        radius: 9,
+        fill: new Fill({ color: "#facc15" }),
+        stroke: new Stroke({ color: "#000000", width: 2 }),
+      }),
+    });
+  }
+  if (geomType === "LineString" || geomType === "MultiLineString") {
+    return new Style({ stroke: new Stroke({ color: "#facc15", width: 6 }) });
+  }
+  return new Style({
+    fill: new Fill({ color: "rgba(250, 204, 21, 0.45)" }),
+    stroke: new Stroke({ color: "#facc15", width: 5 }),
+  });
+};
 
 const MapComponent = ({
   activeBaseLayer,
@@ -27,6 +88,8 @@ const MapComponent = ({
   dpsArea,
   dpsStatus,
   zoomToPlot,
+  geojsonData,
+  layerColors,
 }) => {
   const mapRef = useRef();
 
@@ -36,6 +99,61 @@ const MapComponent = ({
   const graticuleRef = useRef(null);
   const dpsLayerRef = useRef(null);
   const dpsSourceRef = useRef(null);
+  const uploadLayerRef = useRef(null);
+  const uploadSourceRef = useRef(null);
+  // { [layerName]: OlFeature[] } — same instances added to uploadSourceRef,
+  // in the same order as their source FeatureCollection, so the Layer
+  // Explorer panel's (layerName, index) selection can look up the exact
+  // feature to highlight/zoom to.
+  const layerFeaturesRef = useRef({});
+  const selectedFeatureRef = useRef(null);
+  const [selectedExplorerKey, setSelectedExplorerKey] = useState(null);
+  const [featurePopup, setFeaturePopup] = useState(null);
+  // Kept in sync via effect so the map's click handlers (registered once on
+  // mount) always read the current layer colors, not a stale closure.
+  const layerColorsRef = useRef(layerColors);
+
+  useEffect(() => {
+    layerColorsRef.current = layerColors;
+  }, [layerColors]);
+
+  // Topmost uploaded (non-DPS) feature under a given pixel, or null.
+  const findUploadFeatureAt = (map, pixel) => {
+    let found = null;
+    map.forEachFeatureAtPixel(
+      pixel,
+      (feature, layer) => {
+        if (layer === uploadLayerRef.current) {
+          found = feature;
+          return true;
+        }
+        return false;
+      },
+      { hitTolerance: 3 },
+    );
+    return found;
+  };
+
+  // Restores the previously-selected feature's normal layer color and
+  // highlights the given one. Shared by direct map clicks and the Layer
+  // Explorer panel so both stay in sync.
+  const selectFeature = (feature) => {
+    if (!feature) return;
+    if (selectedFeatureRef.current && selectedFeatureRef.current !== feature) {
+      const prev = selectedFeatureRef.current;
+      const prevColor = layerColorsRef.current?.[prev.get("__layer")] || "#2563eb";
+      prev.setStyle(styleForUploadFeature(prev.getGeometry()?.getType(), prevColor));
+    }
+
+    feature.setStyle(styleForSelectedFeature(feature.getGeometry()?.getType()));
+    selectedFeatureRef.current = feature;
+
+    const layerName = feature.get("__layer");
+    const index = layerFeaturesRef.current[layerName]?.indexOf(feature);
+    if (layerName && index !== undefined && index >= 0) {
+      setSelectedExplorerKey(`${layerName}::${index}`);
+    }
+  };
 
   // Initialize Map on mount (this component only mounts for the Data QC tab,
   // so it opens directly on the Dubai, UAE region)
@@ -53,16 +171,57 @@ const MapComponent = ({
     });
     dpsLayerRef.current = dpsLayer;
 
+    const uploadSource = new VectorSource();
+    uploadSourceRef.current = uploadSource;
+
+    const uploadLayer = new VectorLayer({
+      source: uploadSource,
+    });
+    uploadLayerRef.current = uploadLayer;
+
     const map = new Map({
       target: mapRef.current,
-      layers: [baseTile, dpsLayer],
+      layers: [baseTile, dpsLayer, uploadLayer],
       controls: defaultControls({ zoom: false, rotate: false }),
+      // Double-click is repurposed to show a feature's attribute popup
+      // instead of the default zoom-in.
+      interactions: defaultInteractions({ doubleClickZoom: false }),
       view: new View({
         center: fromLonLat([87.739202, 22.659946]),
         zoom: 12,
       }),
     });
     mapInstance.current = map;
+
+    // Single-click an uploaded feature to select/highlight it (mirrors
+    // clicking its row in the Layer Explorer panel, minus the zoom); a
+    // second click within the double-click window instead opens its
+    // attribute popup (see interactions above and the dblclick handler below).
+    map.on("singleclick", (evt) => {
+      const feature = findUploadFeatureAt(map, evt.pixel);
+      if (feature) {
+        selectFeature(feature);
+      }
+    });
+
+    map.on("dblclick", (evt) => {
+      const feature = findUploadFeatureAt(map, evt.pixel);
+      if (feature) {
+        selectFeature(feature);
+        // Flip below the click point when too close to the top for the
+        // popup (which opens upward by default) to fit on screen.
+        const placement = evt.pixel[1] < 220 ? "below" : "above";
+        setFeaturePopup({
+          x: evt.pixel[0],
+          y: evt.pixel[1],
+          placement,
+          name: pickFeatureName(feature),
+          properties: feature.getProperties(),
+        });
+      } else {
+        setFeaturePopup(null);
+      }
+    });
 
     // Clean up map instance on unmount
     return () => {
@@ -303,6 +462,55 @@ const MapComponent = ({
     }
   }, [dpsArea, dpsStatus]);
 
+  // Render the selected upload's GeoJSON (one FeatureCollection per layer/
+  // feature-class in the response) and fit the view to its combined extent
+  useEffect(() => {
+    if (!uploadSourceRef.current || !mapInstance.current) return;
+
+    uploadSourceRef.current.clear();
+    layerFeaturesRef.current = {};
+    selectedFeatureRef.current = null;
+    setSelectedExplorerKey(null);
+    setFeaturePopup(null);
+    if (!geojsonData) return;
+
+    const format = new GeoJSON();
+    const allFeatures = [];
+
+    Object.entries(geojsonData).forEach(([layerName, featureCollection]) => {
+      if (!featureCollection || !featureCollection.features) return;
+      const color = layerColors?.[layerName] || "#2563eb";
+      const features = format.readFeatures(featureCollection, {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      });
+      features.forEach((feature, idx) => {
+        feature.setStyle(styleForUploadFeature(feature.getGeometry()?.getType(), color));
+        feature.set("__layer", layerName);
+        // Each layer is read from its own GeoDataFrame on the backend, so
+        // GeoJSON ids (0, 1, 2...) restart per layer. Once merged into one
+        // shared VectorSource, that collides across layers — e.g. every
+        // single-feature country and India's first state all end up with id
+        // 0 — and OL silently keeps only the first feature added per id,
+        // dropping the rest. Force a globally-unique id before adding.
+        feature.setId(`${layerName}::${idx}`);
+      });
+      layerFeaturesRef.current[layerName] = features;
+      allFeatures.push(...features);
+    });
+
+    if (!allFeatures.length) return;
+
+    uploadSourceRef.current.addFeatures(allFeatures);
+
+    const extent = uploadSourceRef.current.getExtent();
+    mapInstance.current.getView().fit(extent, {
+      duration: 800,
+      maxZoom: 18,
+      padding: [100, 100, 100, 100],
+    });
+  }, [geojsonData]);
+
   // Zoom-to-Plot listener when clicked in the Bottom table list
   useEffect(() => {
     if (!zoomToPlot || !mapInstance.current || !dpsSourceRef.current) return;
@@ -336,6 +544,23 @@ const MapComponent = ({
     const currentZoom = view.getZoom();
     if (currentZoom !== undefined) {
       view.animate({ zoom: currentZoom - 1, duration: 200 });
+    }
+  };
+
+  // Layer Explorer row click: highlight the picked feature and zoom to it.
+  const handleExplorerSelect = ({ layerName, index }) => {
+    const feature = layerFeaturesRef.current[layerName]?.[index];
+    if (!feature || !mapInstance.current) return;
+
+    selectFeature(feature);
+
+    const geometry = feature.getGeometry();
+    if (geometry) {
+      mapInstance.current.getView().fit(geometry.getExtent(), {
+        duration: 600,
+        maxZoom: 14,
+        padding: [100, 100, 100, 100],
+      });
     }
   };
 
@@ -389,6 +614,28 @@ const MapComponent = ({
           <IconRuler size={17} />
         </button>
       </div>
+
+      <LayerLegend layerColors={layerColors} className="map-layer-legend" />
+
+      <ProjectionBadge visible={!!geojsonData} className="map-projection-badge" />
+
+      <LayerExplorerPanel
+        geojsonData={geojsonData}
+        layerColors={layerColors}
+        onSelectFeature={handleExplorerSelect}
+        selectedFeatureKey={selectedExplorerKey}
+      />
+
+      {featurePopup && (
+        <FeatureAttributePopup
+          x={featurePopup.x}
+          y={featurePopup.y}
+          placement={featurePopup.placement}
+          name={featurePopup.name}
+          properties={featurePopup.properties}
+          onClose={() => setFeaturePopup(null)}
+        />
+      )}
     </div>
   );
 };

@@ -28,12 +28,12 @@
 }
 
 .layer-trigger-btn:hover {
-  background: #eef2ff;
+  background: var(--hover-tint);
   color: var(--accent);
 }
 
 .layer-trigger-btn.active {
-  background: #eef2ff;
+  background: var(--hover-tint);
   color: var(--accent);
 }
 
@@ -74,7 +74,7 @@
 }
 
 .map-style-card.selected {
-  background: #eef2ff;
+  background: var(--hover-tint);
   border-color: var(--accent);
 }
 

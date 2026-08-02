@@ -5,17 +5,26 @@ import zipfile
 from typing import Dict, Any, Set
 from rest_framework import serializers
 
+from .models import FileUploadRecord
+
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
 
-class DataValidateSerializer(serializers.Serializer):
+
+class FileUploadRecordSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = FileUploadRecord
+        fields = ['id', 'username', 'temp_id', 'file_type', 'status', 'status_message', 'created_at', 'updated_at']
+        read_only_fields = fields
+
+class ZipPayloadValidationMixin:
     """
-    Serializer to validate the GIS data payload.
-    It expects base64 encoded zip file data and validates the zip structure.
+    Shared base64/zip-structure validation for any serializer that accepts a
+    base64-encoded zip + file_type — used by both the initial upload
+    (DataValidateSerializer) and replacing an existing upload's contents
+    (UploadUpdateSerializer), so the rules can't drift between the two.
     """
-    user_id = serializers.CharField(max_length=255, required=True)
-    temp_id = serializers.CharField(max_length=255, required=True)
-    file_type = serializers.ChoiceField(choices=['gdb', 'shp'], required=True)
-    file_data = serializers.CharField(required=True)
 
     def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -24,6 +33,7 @@ class DataValidateSerializer(serializers.Serializer):
         so the caller can fix everything in a single pass.
         """
         file_data_str = attrs.get('file_data', '')
+        file_type = attrs.get('file_type')
         errors = []
 
         # 1. Validate Base64 formatting and decode into byte stream.
@@ -56,33 +66,16 @@ class DataValidateSerializer(serializers.Serializer):
 
                     # Check for top-level directory 'source/'
                     # We normalize backslashes to forward slashes for cross-platform compatibility
-                    has_source = False
-                    gdb_folders: Set[str] = set()
-
-                    for name in namelist:
-                        normalized_name = name.replace('\\', '/')
-
-                        # Verify if path starts with source/
-                        if normalized_name.startswith('source/'):
-                            has_source = True
-
-                        # Split path parts to find child directories directly inside source/
-                        parts = [p for p in normalized_name.split('/') if p]
-                        if len(parts) >= 2 and parts[0] == 'source':
-                            child = parts[1]
-                            if child.endswith('.gdb'):
-                                gdb_folders.add(child)
+                    has_source = any(
+                        name.replace('\\', '/').startswith('source/') for name in namelist
+                    )
 
                     if not has_source:
                         errors.append("Missing 'source/' top-level directory inside the ZIP archive.")
-
-                    # Enforce exactly one .gdb directory inside source/
-                    if len(gdb_folders) == 0:
-                        errors.append("No '.gdb' directory found inside the 'source/' folder.")
-                    elif len(gdb_folders) > 1:
-                        errors.append(
-                            f"Exactly one '.gdb' directory is required inside 'source/', but found {len(gdb_folders)}: {', '.join(sorted(gdb_folders))}."
-                        )
+                    elif file_type == 'gdb':
+                        errors.extend(self._validate_gdb_structure(namelist))
+                    elif file_type == 'shp':
+                        errors.extend(self._validate_shp_structure(namelist))
 
             except zipfile.BadZipFile:
                 errors.append("The decoded file stream is a corrupted ZIP archive.")
@@ -94,3 +87,73 @@ class DataValidateSerializer(serializers.Serializer):
         attrs['success_message'] = "File validation passed successfully."
         attrs['decoded_bytes'] = decoded_bytes
         return attrs
+
+    @staticmethod
+    def _validate_gdb_structure(namelist) -> list:
+        """Enforce exactly one '<name>.gdb' directory directly inside 'source/'."""
+        errors = []
+        gdb_folders: Set[str] = set()
+
+        for name in namelist:
+            parts = [p for p in name.replace('\\', '/').split('/') if p]
+            if len(parts) >= 2 and parts[0] == 'source' and parts[1].endswith('.gdb'):
+                gdb_folders.add(parts[1])
+
+        if len(gdb_folders) == 0:
+            errors.append("No '.gdb' directory found inside the 'source/' folder.")
+        elif len(gdb_folders) > 1:
+            errors.append(
+                f"Exactly one '.gdb' directory is required inside 'source/', but found {len(gdb_folders)}: {', '.join(sorted(gdb_folders))}."
+            )
+        return errors
+
+    @staticmethod
+    def _validate_shp_structure(namelist) -> list:
+        """Enforce at least one '<name>.shp' anywhere inside 'source/' (any subfolder depth, multiple allowed), each with its required .shx/.dbf siblings."""
+        errors = []
+        extensions_by_path: Dict[str, Set[str]] = {}
+
+        for name in namelist:
+            parts = [p for p in name.replace('\\', '/').split('/') if p]
+            if len(parts) >= 2 and parts[0] == 'source' and '.' in parts[-1]:
+                basename, _, ext = parts[-1].rpartition('.')
+                # Key includes the sub-path under source/ so files with the
+                # same basename in different subfolders aren't conflated.
+                path_key = '/'.join(parts[1:-1] + [basename])
+                extensions_by_path.setdefault(path_key, set()).add(ext.lower())
+
+        shp_paths = {
+            path_key for path_key, exts in extensions_by_path.items() if 'shp' in exts
+        }
+
+        if len(shp_paths) == 0:
+            errors.append("No '.shp' file found inside the 'source/' folder.")
+        else:
+            for path_key in sorted(shp_paths):
+                missing = {'shp', 'shx', 'dbf'} - extensions_by_path[path_key]
+                if missing:
+                    errors.append(
+                        f"Shapefile '{path_key}' is missing required file(s): {', '.join(sorted('.' + e for e in missing))}."
+                    )
+        return errors
+
+
+class DataValidateSerializer(ZipPayloadValidationMixin, serializers.Serializer):
+    """
+    Serializer for a brand-new upload. Expects base64 encoded zip file data
+    and validates the zip structure via ZipPayloadValidationMixin.
+    """
+    user_id = serializers.CharField(max_length=255, required=True)
+    temp_id = serializers.CharField(max_length=255, required=True)
+    file_type = serializers.ChoiceField(choices=['gdb', 'shp'], required=True)
+    file_data = serializers.CharField(required=True)
+
+
+class UploadUpdateSerializer(ZipPayloadValidationMixin, serializers.Serializer):
+    """
+    Serializer for replacing an existing upload's contents. The record being
+    updated is identified by the URL's <pk>, so only the new file itself is
+    required here — validated the same way as a brand-new upload.
+    """
+    file_type = serializers.ChoiceField(choices=['gdb', 'shp'], required=True)
+    file_data = serializers.CharField(required=True)
