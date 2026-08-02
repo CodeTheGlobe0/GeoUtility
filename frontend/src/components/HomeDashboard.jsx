@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import './HomeDashboard.css';
-import { IconCheckCircle, IconUpload, IconMapPin, IconLayers } from './Icons';
+import { IconCheckCircle, IconMapPin, IconLayers } from './Icons';
+import { API_ENDPOINTS } from '../config';
 
 const EmptyState = ({ icon, title, subtitle }) => (
   <div className="hcd-empty-state">
@@ -13,7 +14,134 @@ const EmptyState = ({ icon, title, subtitle }) => (
 const formatTime = (date) =>
   date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
-const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] }) => {
+// Layout is persisted as a real .json file on disk (via the Vite dev-server
+// plugin at vite-plugins/dashboardLayoutPlugin.js — see frontend/dashboard-layouts/),
+// keyed by user id, so it's shared across any browser hitting this dev server.
+// NOTE: this endpoint only exists while running the Vite dev server; it is not
+// available in a production build (see the plugin file for details).
+const LAYOUT_API = '/api/dashboard-layout';
+
+const fetchLayout = async (userId) => {
+  try {
+    const res = await fetch(`${LAYOUT_API}?userId=${encodeURIComponent(userId ?? 'anonymous')}`);
+    return res.ok ? await res.json() : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveLayout = async (userId, layout) => {
+  try {
+    await fetch(`${LAYOUT_API}?userId=${encodeURIComponent(userId ?? 'anonymous')}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(layout),
+    });
+  } catch {
+    // Dev server unreachable — dragging still works this session, it just won't persist
+  }
+};
+
+// Lets any card be picked up by its header and dragged anywhere on screen.
+// Offsets are applied on top of the card's normal (responsive) flow position
+// via a CSS transform, so the auto-adjusting layout keeps working underneath;
+// on resize, saved positions are kept but nudged back on-screen if they'd
+// otherwise end up stranded.
+const useDraggableCards = (userId) => {
+  const [offsets, setOffsets] = useState({});
+  const [draggingId, setDraggingId] = useState(null);
+  const dragState = useRef(null);
+  const cardRefs = useRef({});
+
+  // Load this user's saved layout from the on-disk JSON file on mount
+  // (and again if the logged-in user changes).
+  useEffect(() => {
+    let cancelled = false;
+    fetchLayout(userId).then((layout) => {
+      if (!cancelled) setOffsets(layout);
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      const st = dragState.current;
+      if (!st) return;
+      const dx = e.clientX - st.startX;
+      const dy = e.clientY - st.startY;
+      setOffsets((prev) => ({ ...prev, [st.id]: { x: st.baseX + dx, y: st.baseY + dy } }));
+    };
+    const handleUp = () => {
+      if (dragState.current) {
+        dragState.current = null;
+        setOffsets((current) => {
+          saveLayout(userId, current);
+          return current;
+        });
+      }
+      setDraggingId(null);
+    };
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+  }, [userId]);
+
+  // Keep saved positions across resizes, but nudge any card back on-screen
+  // if the new window size would otherwise leave it stranded off-view.
+  useEffect(() => {
+    const handleResize = () => {
+      setOffsets((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        Object.keys(next).forEach((id) => {
+          const el = cardRefs.current[id];
+          if (!el) return;
+          const rect = el.getBoundingClientRect();
+          const margin = 60; // keep at least this many px of the card visible
+          let { x, y } = next[id];
+          if (rect.right < margin) { x += margin - rect.right; changed = true; }
+          if (rect.left > window.innerWidth - margin) { x -= rect.left - (window.innerWidth - margin); changed = true; }
+          if (rect.bottom < margin) { y += margin - rect.bottom; changed = true; }
+          if (rect.top > window.innerHeight - margin) { y -= rect.top - (window.innerHeight - margin); changed = true; }
+          next[id] = { x, y };
+        });
+        if (changed) saveLayout(userId, next);
+        return changed ? next : prev;
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [userId]);
+
+  const startDrag = useCallback((id) => (e) => {
+    // Only left-click / primary touch
+    if (e.button !== undefined && e.button !== 0) return;
+    const current = offsets[id] || { x: 0, y: 0 };
+    dragState.current = { id, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y };
+    setDraggingId(id);
+  }, [offsets]);
+
+  const registerCard = useCallback((id) => (el) => {
+    cardRefs.current[id] = el;
+  }, []);
+
+  const getCardProps = useCallback((id) => {
+    const o = offsets[id];
+    return {
+      style: o ? { transform: `translate(${o.x}px, ${o.y}px)`, zIndex: draggingId === id ? 950 : undefined } : undefined,
+      isDragging: draggingId === id,
+      ref: registerCard(id),
+    };
+  }, [offsets, draggingId, registerCard]);
+
+  return { startDrag, getCardProps };
+};
+
+const HomeDashboard = ({ selectedFeature, validationHistory = [], userId, layerColors }) => {
+  const legendEntries = Object.entries(layerColors || {});
   const hasHistory = validationHistory.length > 0;
   const successCount = validationHistory.filter((v) => v.success).length;
   const failCount = validationHistory.length - successCount;
@@ -21,26 +149,57 @@ const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] 
 
   const maxBar = Math.max(validationHistory.length, successCount, failCount, 1);
 
+  // Total count of this user's uploads on record (persisted server-side),
+  // not just this session's in-memory validationHistory.
+  const [totalUploads, setTotalUploads] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchTotalUploads = async () => {
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const res = await fetch(API_ENDPOINTS.UPLOADS, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (!cancelled && data.success) {
+          setTotalUploads((data.data || []).length);
+        }
+      } catch {
+        // Keep the last known count on failure
+      }
+    };
+    fetchTotalUploads();
+    return () => { cancelled = true; };
+  }, [validationHistory]);
+
+  const { startDrag, getCardProps } = useDraggableCards(userId);
+
+  const cardStyle = (id, extra) => {
+    const { style, isDragging, ref } = getCardProps(id);
+    return { className: `hcd-card ${extra || ''} ${isDragging ? 'dragging' : ''}`, style, ref };
+  };
+
   return (
     <div className="hcd-overlay">
       {/* Left column */}
       <div className="hcd-col hcd-col-left">
-        <div className="hcd-card hcd-card-accent hcd-card-sm">
-          <div className="hcd-card-header">
-            <span>Total Validations</span>
+        <div {...cardStyle('total-validations', 'hcd-card-accent hcd-card-sm')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('total-validations')}>
+            <span>Total</span>
             <IconCheckCircle size={16} />
           </div>
-          <div className="hcd-big-number">{validationHistory.length.toLocaleString()}</div>
-          {hasHistory ? (
-            <div className="hcd-progress-track"><div className="hcd-progress-fill" style={{ width: `${scorePct}%` }} /></div>
+          <div className="hcd-big-number">{totalUploads.toLocaleString()}</div>
+          {totalUploads > 0 ? (
+            <div className="hcd-progress-track"><div className="hcd-progress-fill" style={{ width: `${scorePct ?? 100}%` }} /></div>
           ) : (
             <span className="hcd-hint">No validations run yet</span>
           )}
         </div>
 
         {/* Attribute & Feature Info Card */}
-        <div className="hcd-card hcd-card-lg">
-          <div className="hcd-card-header">
+        <div {...cardStyle('attribute-inspector', 'hcd-card-lg')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('attribute-inspector')}>
             <span>Attribute Inspector <em>(WGS 84)</em></span>
           </div>
           {selectedFeature ? (
@@ -73,8 +232,8 @@ const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] 
 
       {/* Right column */}
       <div className="hcd-col hcd-col-right">
-        <div className="hcd-card hcd-card-sm">
-          <div className="hcd-card-header"><span>System Health Monitor</span></div>
+        <div {...cardStyle('system-health', 'hcd-card-sm')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('system-health')}><span>System Health Monitor</span></div>
           <ul className="hcd-check-list">
             <li><IconCheckCircle size={13} /> Recognized GIS</li>
             <li><IconCheckCircle size={13} /> Processed</li>
@@ -82,8 +241,8 @@ const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] 
         </div>
 
         {/* Schema Scorecard / Geometry Charts */}
-        <div className="hcd-card hcd-card-accent hcd-card-lg">
-          <div className="hcd-card-header"><span>Schema Compliance</span></div>
+        <div {...cardStyle('schema-compliance', 'hcd-card-accent hcd-card-lg')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('schema-compliance')}><span>Schema Compliance</span></div>
           {hasHistory ? (
             <>
               <div className="hcd-label">Score (Success Rate)</div>
@@ -129,8 +288,8 @@ const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] 
       {/* Bottom row */}
       <div className="hcd-bottom-row">
         {/* Processing Queue */}
-        <div className="hcd-card hcd-bottom-card">
-          <div className="hcd-card-header"><span>Processing Queue</span></div>
+        <div {...cardStyle('processing-queue', 'hcd-bottom-card')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('processing-queue')}><span>Processing Queue</span></div>
           <div className="hcd-table-wrap">
             <table className="hcd-table hcd-table-fixed">
               <thead className={!hasHistory ? 'hcd-thead-dim' : ''}>
@@ -155,8 +314,8 @@ const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] 
         </div>
 
         {/* Admin System Logs */}
-        <div className="hcd-card hcd-bottom-card">
-          <div className="hcd-card-header"><span>Admin System Logs</span></div>
+        <div {...cardStyle('admin-logs', 'hcd-bottom-card')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('admin-logs')}><span>Admin System Logs</span></div>
           <div className="hcd-table-wrap">
             {hasHistory ? (
               <ul className="hcd-log-list">
@@ -175,32 +334,27 @@ const HomeDashboard = ({ onUploadClick, selectedFeature, validationHistory = [] 
           </div>
         </div>
 
-        {/* Active Map Registry */}
-        <div className="hcd-card hcd-bottom-card">
-          <div className="hcd-card-header"><span>Active Map Registry</span></div>
+        {/* Layer Legend */}
+        <div {...cardStyle('layer-legend', 'hcd-bottom-card hcd-legend-card')}>
+          <div className="hcd-card-header" onPointerDown={startDrag('layer-legend')}><span>Layer Legend</span></div>
           <div className="hcd-table-wrap">
-            <table className="hcd-table hcd-table-fixed">
-              <thead className={!hasHistory ? 'hcd-thead-dim' : ''}>
-                <tr><th>Name</th><th>Type</th></tr>
-              </thead>
-              <tbody>
-                {hasHistory
-                  ? validationHistory
-                      .filter((v) => v.success)
-                      .slice(0, 3)
-                      .map((v, i) => (
-                        <tr key={i}><td>{v.fileName}</td><td>{v.fileType.toUpperCase()}</td></tr>
-                      ))
-                  : null}
-              </tbody>
-            </table>
-            {!hasHistory && (
-              <EmptyState icon={<IconLayers size={20} />} title="No Maps Registered" subtitle="Validated uploads appear here." />
+            {legendEntries.length > 0 ? (
+              <div className="hcd-legend-rows">
+                {legendEntries.map(([name, color]) => (
+                  <div className="hcd-legend-row" key={name}>
+                    <span className="hcd-legend-swatch" style={{ background: color }} />
+                    <span className="hcd-legend-label" title={name}>{name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<IconLayers size={20} />}
+                title="No Layers Loaded"
+                subtitle="Select an upload to see its layer colors."
+              />
             )}
           </div>
-          <button className="hcd-upload-btn" onClick={onUploadClick}>
-            <IconUpload size={13} /> Upload GIS ZIP Archive
-          </button>
         </div>
       </div>
     </div>

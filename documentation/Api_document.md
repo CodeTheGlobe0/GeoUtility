@@ -16,6 +16,10 @@ This document contains a comprehensive specification of all authentication, user
 9. [Update User Details](#9-update-user-details)
 10. [Delete User](#10-delete-user)
 11. [Data Process Validation](#11-data-process-validation)
+12. [List Uploads](#12-list-uploads)
+13. [Get Upload GeoJSON](#13-get-upload-geojson)
+14. [Update Upload](#14-update-upload)
+15. [Delete Upload](#15-delete-upload)
 
 ---
 
@@ -402,7 +406,7 @@ Deletes a user account.
 ---
 
 ### 11. Data Process Validation
-Decodes a Base64 encoded ZIP archive payload and validates that it contains a top-level directory named `source/` containing exactly one `.gdb` folder. The decoded archive must not exceed **20 MB**.
+Decodes a Base64 encoded ZIP archive payload and validates its structure based on `file_type`. The decoded archive must not exceed **20 MB**. See `documentation/data_process_flow.md` for a full code-level walkthrough with diagrams.
 
 *   **URL:** `/api/data-process/validate/`
 *   **Method:** `POST`
@@ -412,7 +416,10 @@ Decodes a Base64 encoded ZIP archive payload and validates that it contains a to
     *   `Content-Type: application/json`
 
 #### Request Body
-`file_type` must be exactly `"gdb"` or `"shp"` — any other value is rejected with a `400`. Note: the ZIP structure check itself is unchanged regardless of which value is chosen — it still requires `source/` with exactly one `.gdb` folder.
+`file_type` must be exactly `"gdb"` or `"shp"` — any other value is rejected with a `400`. The ZIP structure check depends on which value is chosen:
+- `"gdb"` — the ZIP must contain a top-level `source/` folder with **exactly one** `<name>.gdb` directory inside it.
+- `"shp"` — the ZIP must contain a top-level `source/` folder with **at least one** `<name>.shp` file anywhere inside it, **including subfolders** (multiple are allowed, e.g. one per country/region, each in its own subfolder). Every `.shp` found must have its own required `.shx` and `.dbf` sibling files alongside it.
+
 ```json
 {
   "user_id": "101",
@@ -457,7 +464,7 @@ On success, the ZIP archive's contents are extracted to `MEDIA_ROOT/<authenticat
     ```
 
 #### Validation Behavior: All Errors Are Reported Together
-Aside from an invalid Base64 payload (which is a hard stop, since nothing else can be checked without decoded bytes), every other check runs independently and **all failures are collected into a single response** — the caller does not need to fix and resubmit one error at a time. The checks that can combine are: file size, ZIP format validity, missing `source/` directory, and missing/multiple `.gdb` folders.
+Aside from an invalid Base64 payload (which is a hard stop, since nothing else can be checked without decoded bytes), every other check runs independently and **all failures are collected into a single response** — the caller does not need to fix and resubmit one error at a time. File size and ZIP-format-validity can combine with any structural error. The structural checks themselves are mutually exclusive per request: if `source/` is missing, the `.gdb`/`.shp` check is skipped entirely (there's nothing to look inside); otherwise exactly one of the `.gdb` or `.shp` checks runs, based on `file_type`.
 
 #### Error Response (Invalid Base64 Data)
 Hard stop — no other checks run.
@@ -477,19 +484,18 @@ Hard stop — no other checks run.
     ```
 
 #### Error Response (Multiple Issues Found In One Pass)
-Example: the payload is oversized **and** the ZIP is missing its `source/` directory **and** has no `.gdb` folder.
+Example: the payload is oversized **and** the ZIP is missing its `source/` directory.
 *   **Status Code:** `400 Bad Request`
 *   **Response Body:**
     ```json
     {
       "success": false,
-      "message": "3 validation errors occurred.",
+      "message": "2 validation errors occurred.",
       "data": null,
       "errors": {
         "file_data": [
           "File size exceeds the maximum allowed limit of 20 MB (received 24.13 MB).",
-          "Missing 'source/' top-level directory inside the ZIP archive.",
-          "No '.gdb' directory found inside the 'source/' folder."
+          "Missing 'source/' top-level directory inside the ZIP archive."
         ]
       }
     }
@@ -512,7 +518,7 @@ If the ZIP itself is not valid/corrupted, structural checks (`source/`, `.gdb`) 
     }
     ```
 
-#### Error Response (Invalid GDB counts)
+#### Error Response (Invalid `.gdb` counts — `file_type: "gdb"`)
 *   **Status Code:** `400 Bad Request`
 *   **Response Body:**
     ```json
@@ -527,3 +533,231 @@ If the ZIP itself is not valid/corrupted, structural checks (`source/`, `.gdb`) 
       }
     }
     ```
+
+#### Error Response (Incomplete Shapefile — `file_type: "shp"`)
+The `.shp` file was found but its required `.shx`/`.dbf` siblings were missing.
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "Shapefile 'roads' is missing required file(s): .dbf, .shx.",
+      "data": null,
+      "errors": {
+        "file_data": [
+          "Shapefile 'roads' is missing required file(s): .dbf, .shx."
+        ]
+      }
+    }
+    ```
+
+---
+
+### 12. List Uploads
+Returns upload history, most recent first, scoped by role:
+- **Admins (`is_superuser`)** see every user's uploads.
+- **Everyone else (staff or regular users)** only see their own.
+
+Every `FileUploadRecord` the caller is entitled to see is included regardless of status. Use the `id` of a record with `status: "SUCCESS"` to fetch its GeoJSON via endpoint 13.
+
+*   **URL:** `/api/data-process/uploads/`
+*   **Method:** `GET`
+*   **Authentication:** Token-based (`IsAuthenticated`)
+*   **Headers:**
+    *   `Authorization: Bearer <access_token>`
+
+#### Success Response
+*   **Status Code:** `200 OK`
+*   **Response Body:**
+    ```json
+    {
+      "success": true,
+      "message": "1 upload(s) found.",
+      "data": [
+        {
+          "id": 3,
+          "username": "john_doe",
+          "temp_id": "sess_8892",
+          "file_type": "gdb",
+          "status": "SUCCESS",
+          "status_message": "File validation passed successfully.",
+          "created_at": "2026-08-02T02:55:37.003488Z",
+          "updated_at": "2026-08-02T02:55:37.003503Z"
+        }
+      ],
+      "errors": null
+    }
+    ```
+
+---
+
+### 13. Get Upload GeoJSON
+Reads the `.gdb` or `.shp`(s) behind a given upload and returns a dict keyed by feature class/layer name, each value a standalone GeoJSON `FeatureCollection` for that layer (for `.shp` uploads, one key per shapefile found anywhere inside `source/`, including subfolders — e.g. `ar`, `bo`, `cl`, ... if the upload contained one shapefile per country; a nested shapefile's key includes its sub-path, e.g. `asia/in`, so same-named files in different subfolders don't collide). Coordinates are reprojected to WGS84 (`EPSG:4326`) whenever the source layer has a known CRS; layers with no CRS defined are returned in their original coordinates unchanged.
+
+**Access:** admins (`is_superuser`) can fetch any user's upload by id; everyone else (staff or regular users) can only fetch their own.
+
+See `documentation/data_process_flow.md` for the full internal trace and diagrams of this endpoint.
+
+*   **URL:** `/api/data-process/uploads/<id>/geojson/` (Example: `/api/data-process/uploads/3/geojson/`)
+*   **Method:** `GET`
+*   **Authentication:** Token-based (`IsAuthenticated`) — only the uploading user can access their own upload
+*   **Headers:**
+    *   `Authorization: Bearer <access_token>`
+
+#### Success Response
+*   **Status Code:** `200 OK`
+*   **Response Body:**
+    ```json
+    {
+      "success": true,
+      "message": "2 layer(s), 18 feature(s) extracted.",
+      "data": {
+        "PARCEL": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": { "PARCEL_ID": 12, "...": "..." },
+              "geometry": { "type": "Polygon", "coordinates": [ ["..."] ] }
+            }
+          ]
+        },
+        "TRANSPORT_NETWORK": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": { "SectionId": "SBF3969_11 KV MAGADH MEDICAL2901", "...": "..." },
+              "geometry": { "type": "LineString", "coordinates": [ ["..."] ] }
+            }
+          ]
+        }
+      },
+      "errors": null
+    }
+    ```
+
+#### Error Response (Not Found / Not Yours)
+Returned identically whether the `id` doesn't exist or belongs to a different user — this avoids revealing which upload IDs exist.
+*   **Status Code:** `404 Not Found`
+
+#### Error Response (Upload Not Successfully Validated)
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "This upload has not completed successful validation/extraction.",
+      "data": null,
+      "errors": {
+        "id": ["Upload status is 'VALIDATING', expected 'SUCCESS'."]
+      }
+    }
+    ```
+
+#### Error Response (Extracted Data Missing From Disk)
+*   **Status Code:** `404 Not Found`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "Could not locate the extracted data source for this upload.",
+      "data": null,
+      "errors": {
+        "id": ["Expected exactly one .gdb directory under '...', found 0."]
+      }
+    }
+    ```
+
+#### Error Response (File Exists But Couldn't Be Read)
+*   **Status Code:** `422 Unprocessable Entity`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "Failed to read features from the uploaded data source.",
+      "data": null,
+      "errors": {
+        "id": ["<underlying geopandas/pyogrio error message>"]
+      }
+    }
+    ```
+
+---
+
+### 14. Update Upload
+Replaces an existing upload's contents with a new base64-encoded zip, validated exactly the same way as a brand-new upload (see endpoint 11 — size limit, zip structure, `.gdb`/`.shp` rules all apply identically). The old extracted files are deleted from disk **before** the new archive is extracted in their place, so no leftover files from the previous version remain. `temp_id` cannot be changed — only `file_type` and `file_data` are accepted; the record being updated is identified by the URL's `<id>`.
+
+**Access:** admins (`is_superuser`) can update any user's upload; everyone else (staff or regular users) can only update their own.
+
+*   **URL:** `/api/data-process/uploads/<id>/` (Example: `/api/data-process/uploads/3/`)
+*   **Method:** `PUT`
+*   **Authentication:** Token-based (`IsAuthenticated`)
+*   **Headers:**
+    *   `Authorization: Bearer <access_token>`
+    *   `Content-Type: application/json`
+
+#### Request Body
+```json
+{
+  "file_type": "shp",
+  "file_data": "UEsDBBQAAAAIAI9iW..." // Base64 encoded ZIP stream
+}
+```
+
+#### Success Response
+*   **Status Code:** `200 OK`
+*   **Response Body:**
+    ```json
+    {
+      "success": true,
+      "message": "File validation passed successfully.",
+      "data": {
+        "id": 3,
+        "temp_id": "sess_8892",
+        "file_type": "shp",
+        "extracted_path": "5/shp/sess_8892"
+      },
+      "errors": null
+    }
+    ```
+
+#### Error Response (Not Found / Not Yours)
+Returned identically whether the `id` doesn't exist or belongs to a different user.
+*   **Status Code:** `404 Not Found`
+
+#### Error Response (Invalid Zip Payload)
+Same validation rules and error format as endpoint 11 (base64 decode failure is a hard stop; size, zip-format, and structure errors are otherwise combined into one response).
+*   **Status Code:** `400 Bad Request`
+*   **Response Body:**
+    ```json
+    {
+      "success": false,
+      "message": "No '.shp' file found inside the 'source/' folder.",
+      "data": null,
+      "errors": {
+        "file_data": ["No '.shp' file found inside the 'source/' folder."]
+      }
+    }
+    ```
+
+---
+
+### 15. Delete Upload
+Deletes an upload's database record **and** removes its extracted files from disk.
+
+**Access:** admins (`is_superuser`) can delete any user's upload; everyone else (staff or regular users) can only delete their own.
+
+*   **URL:** `/api/data-process/uploads/<id>/` (Example: `/api/data-process/uploads/3/`)
+*   **Method:** `DELETE`
+*   **Authentication:** Token-based (`IsAuthenticated`)
+*   **Headers:**
+    *   `Authorization: Bearer <access_token>`
+
+#### Success Response
+*   **Status Code:** `204 No Content`
+*   **Response Body:** (Empty response body)
+
+#### Error Response (Not Found / Not Yours)
+Returned identically whether the `id` doesn't exist or belongs to a different user.
+*   **Status Code:** `404 Not Found`

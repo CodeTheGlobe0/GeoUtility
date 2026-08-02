@@ -1,3 +1,10 @@
+.cesium-globe-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .cesium-globe-container {
   position: absolute;
   inset: 0;
@@ -7,4 +14,48 @@
 
 .cesium-globe-container .cesium-viewer-bottom {
   display: none;
+}
+
+/* Floating 2D/3D scene mode toggle. Positioned in the same right-edge
+   clearance the dashboard overlay already reserves for a toolbar
+   (see --hcd-toolbar-clear in HomeDashboard.css), so it never overlaps
+   the System Health Monitor card pinned to that corner. */
+.cesium-mode-toggle-btn {
+  position: absolute;
+  top: 56px;
+  right: 15px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 58px;
+  min-height: 50px;
+  padding: 10px 4px;
+  border-radius: 10px;
+  background: rgba(13, 24, 43, 0.9);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  color: #e2e8f0;
+  font-family: "Inter", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.cesium-mode-toggle-btn:hover {
+  background: rgba(94, 234, 212, 0.15);
+  border-color: #5eead4;
+  color: #5eead4;
+}
+
+/* Projection badge, stacked directly below the 2D/3D toggle in the same
+   right-edge clearance strip. */
+.cesium-projection-badge {
+  position: absolute;
+  top: 114px;
+  right: 15px;
 }

@@ -1,0 +1,128 @@
+/* Map-anchored feature attribute popup, shown on double-click. Positioned
+   via inline left/top (screen pixel from the OL click event) and shifted up
+   above that point with a small pointer tail, like a classic map info box. */
+
+.fap-popup {
+  position: absolute;
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 260px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px var(--shadow-color);
+  z-index: 1100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: "Inter", sans-serif;
+  box-sizing: border-box;
+}
+
+/* Opens upward above the click point (default) — used when there's enough
+   room above; flips to open downward near the top of the viewport instead
+   (see the placement calculation in MapComponent.jsx). */
+.fap-popup.fap-above {
+  transform: translate(-50%, calc(-100% - 14px));
+}
+
+.fap-popup.fap-above::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.fap-popup.fap-below {
+  transform: translate(-50%, 14px);
+}
+
+.fap-popup.fap-below::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background: var(--card-bg);
+  border-left: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.fap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.fap-header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fap-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.fap-close:hover {
+  color: var(--text-color);
+}
+
+.fap-body {
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+
+.fap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.fap-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+
+.fap-key {
+  color: var(--text-muted);
+  font-weight: 700;
+  padding-right: 10px;
+  white-space: nowrap;
+}
+
+.fap-value {
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+.fap-empty {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 8px 0;
+  text-align: center;
+}

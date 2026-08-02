@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Per-user dashboard card layouts (dev-server-only file store, runtime data)
+dashboard-layouts/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

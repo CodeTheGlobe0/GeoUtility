@@ -22,4 +22,21 @@
   position: relative;
 }
 
+/* Auto dark theme for the Data QC tab: activates when the selected basemap
+   (Dark Map / Satellite) is dark, so the navbar/cards/buttons match instead
+   of clashing white-on-dark. Overrides the same custom properties every
+   card/button already reads via var(...). */
+.app-main-layout.map-dark-theme {
+  --bg-color: #0b1329;
+  --card-bg: rgba(15, 25, 48, 0.97);
+  --modal-bg: rgba(15, 25, 48, 0.98);
+  --navbar-bg: rgba(11, 19, 41, 0.96);
+  --text-color: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-primary: #f1f5f9;
+  --border-color: rgba(94, 234, 212, 0.18);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --shadow-color: rgba(0, 0, 0, 0.45);
+  --hover-tint: rgba(94, 234, 212, 0.12);
+}
 

@@ -8,4 +8,6 @@ export const API_ENDPOINTS = {
   TOKEN_REFRESH: `${API_BASE_URL}/api/token/refresh/`,
   USERS: `${API_BASE_URL}/api/auth/users/`,
   VALIDATE_DATA: `${API_BASE_URL}/api/data-process/validate/`,
+  UPLOADS: `${API_BASE_URL}/api/data-process/uploads/`,
+  UPLOAD_GEOJSON: (id) => `${API_BASE_URL}/api/data-process/uploads/${id}/geojson/`,
 };

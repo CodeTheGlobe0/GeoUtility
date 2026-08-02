@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Navbar.css';
 import ytIcon from '../assets/yticon.png';
-import { IconShield, IconUpload, IconUser, IconLogOut, IconGrid } from './Icons';
+import { IconShield, IconUser, IconLogOut, IconLayers } from './Icons';
 
-const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onValidateClick, activeTab, onTabChange, dashboardVisible, onDashboardToggle, dark }) => {
+const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onUploadsClick, activeTab, onTabChange, dark }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -81,43 +81,18 @@ const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onValidateC
         >
           Data QC
         </button>
-        <button
-          className="nav-tab-btn placeholder"
-          title="Analysis Tool (Coming Soon)"
-          disabled
-        >
-          Analysis
-        </button>
-        <button
-          className="nav-tab-btn placeholder"
-          title="Community Facilities (Coming Soon)"
-          disabled
-        >
-          Community Facilities
-        </button>
       </div>
 
       {/* Right Section: User Controls */}
       {user && (
         <div className="navbar-controls" ref={dropdownRef}>
-          {/* Dashboard overlay toggle (Home tab only) */}
-          {activeTab === 'home' && (
-            <button
-              className={`validate-control-btn ${dashboardVisible ? 'active' : ''}`}
-              title={dashboardVisible ? 'Hide Dashboard Overlay' : 'Show Dashboard Overlay'}
-              onClick={onDashboardToggle}
-            >
-              <IconGrid size={15} />
-            </button>
-          )}
-
-          {/* Validate GIS Data sidebar trigger */}
+          {/* GIS Data Uploads panel trigger */}
           <button
             className="validate-control-btn"
-            title="Validate GIS Data Upload"
-            onClick={onValidateClick}
+            title="GIS Data Uploads"
+            onClick={onUploadsClick}
           >
-            <IconUpload size={15} />
+            <IconLayers size={15} />
           </button>
 
           {/* Admin panel gear button (Visible to superusers only) */}

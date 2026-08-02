@@ -16,6 +16,8 @@
   --accent: #2563eb;
   --accent-dark: #1d4ed8;
   --accent-rgb: 37, 99, 235;
+
+  --hover-tint: #eef2ff;
 }
 
 body, html, #root {

@@ -30,6 +30,23 @@
   box-sizing: border-box;
 }
 
+/* Projection badge, stacked directly below the toolbar card on the same
+   right-edge column. */
+.map-projection-badge {
+  position: absolute;
+  top: 270px;
+  right: 15px;
+  z-index: 1000;
+}
+
+/* Layer legend, pinned to the bottom-right corner. */
+.map-layer-legend {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  z-index: 1000;
+}
+
 /* Custom Actions inside Toolbar */
 .toolbar-action-btn {
   width: 32px;
@@ -49,7 +66,7 @@
 }
 
 .toolbar-action-btn:hover {
-  background: #eef2ff;
+  background: var(--hover-tint);
   color: var(--accent);
 }
 
