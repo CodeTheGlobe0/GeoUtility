@@ -9,6 +9,8 @@ import AdminDashboard from './components/AdminDashboard';
 import ValidateModal from './components/ValidateModal';
 import UploadsPanel from './components/UploadsPanel';
 import HomeDashboard from './components/HomeDashboard';
+import SimpleDataTable from './components/SimpleDataTable';
+import LoadDataPanel from './components/LoadDataPanel';
 import { API_ENDPOINTS } from './config';
 import { buildLayerColorMap } from './utils/layerColors';
 import './App.css';
@@ -23,7 +25,15 @@ function App() {
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [validateModalOpen, setValidateModalOpen] = useState(false);
   const [uploadsPanelOpen, setUploadsPanelOpen] = useState(false);
+  const [loadDataPanelOpen, setLoadDataPanelOpen] = useState(false);
   const [selectedUploadGeojson, setSelectedUploadGeojson] = useState(null);
+  const [liveAttributeTables, setLiveAttributeTables] = useState(null); // [{ table, records }] from a live "attribute" table load
+
+  // Attribute-filter conditions per live-database table, kept here (rather
+  // than inside LoadDataPanel) so they survive the panel closing — it's
+  // conditionally mounted, so its own state would otherwise reset every time
+  // it reopens. { [tableName]: [{ field, op, value }, ...] }
+  const [liveFiltersByTable, setLiveFiltersByTable] = useState({});
 
   // Auto-assigned color per feature layer/class, shared by the Home globe,
   // the Data QC map, and their legends.
@@ -31,6 +41,19 @@ function App() {
     () => buildLayerColorMap(selectedUploadGeojson?.layers),
     [selectedUploadGeojson],
   );
+
+  // Table names currently loaded from the live database (as map layers
+  // and/or as floating attribute tables) — so reopening the Load Live Data
+  // panel can pre-check whatever is already showing, instead of starting
+  // from a blank slate every time.
+  const loadedLiveTableNames = useMemo(() => {
+    const names = new Set();
+    if (selectedUploadGeojson?.upload?.temp_id === 'Live Database') {
+      Object.keys(selectedUploadGeojson.layers || {}).forEach((name) => names.add(name));
+    }
+    (liveAttributeTables || []).forEach((t) => names.add(t.table));
+    return names;
+  }, [selectedUploadGeojson, liveAttributeTables]);
 
   // Home command-center dashboard data: real feature picks from the globe,
   // and a running history of real validation calls (both start empty).
@@ -53,6 +76,32 @@ function App() {
     setActiveTab('home');
   }, []);
 
+  // Selecting one or more live "layer" tables (from GIS Database
+  // Connections' inline browser, or a batch selection in the navbar's Load
+  // Live Data panel): route them through the same rendering pipeline as an
+  // uploaded file, so they get the same per-layer coloring/legend/explorer
+  // support. `layers` is a { [tableName]: geojson } map — always reflects
+  // the caller's full current selection, so an empty map (every layer
+  // unchecked) clears the map instead of leaving stale data behind.
+  const handleLiveLayersLoaded = useCallback((layers) => {
+    const hasLayers = Object.keys(layers).length > 0;
+    setSelectedUploadGeojson(hasLayers ? { upload: { temp_id: 'Live Database' }, layers } : null);
+    setAdminModalOpen(false);
+    setLoadDataPanelOpen(false);
+    if (hasLayers) setActiveTab('home');
+  }, []);
+
+  // Selecting one or more live "attribute" tables (no geometry column):
+  // show them in the simple floating table instead of on the map. `tables`
+  // is an array of { table, records } reflecting the full current
+  // selection — an empty array (every table unchecked) closes the floating
+  // table instead of leaving stale data behind.
+  const handleLiveAttributeTablesLoaded = useCallback((tables) => {
+    setLiveAttributeTables(tables.length > 0 ? tables : null);
+    setAdminModalOpen(false);
+    setLoadDataPanelOpen(false);
+  }, []);
+
   // Data QC map layer state (basemap switching now only applies to that tab)
   const [activeBaseLayer, setActiveBaseLayer] = useState('osm');
   const [showGraticule, setShowGraticule] = useState(false);
@@ -61,6 +110,12 @@ function App() {
   // toolbar, and panels don't clash as white cards floating on a dark map.
   const isDarkBasemap = activeBaseLayer === 'dark' || activeBaseLayer === 'satellite';
   const isDarkTheme = activeTab === 'home' || (activeTab === 'data-qc' && isDarkBasemap);
+
+  // Any of these fully cover the screen without actually resizing the map
+  // wrapper underneath, so the Cesium globe would otherwise keep rendering
+  // (and burning CPU/GPU) while completely hidden, making the whole app feel
+  // laggy — pause it whenever one of these is open.
+  const isOverlayOpen = profileModalOpen || adminModalOpen || validateModalOpen || uploadsPanelOpen || loadDataPanelOpen;
 
   // DDA-style DPS Planning Portal States
   const [dpsResultsVisible, setDpsResultsVisible] = useState(false);
@@ -151,6 +206,7 @@ function App() {
             onProfileClick={() => setProfileModalOpen(true)}
             onAdminClick={() => setAdminModalOpen(true)}
             onUploadsClick={() => setUploadsPanelOpen(true)}
+            onLoadDataClick={() => setLoadDataPanelOpen(true)}
             dark={isDarkTheme}
           />
 
@@ -164,12 +220,22 @@ function App() {
             />
           )}
 
-          {activeTab !== 'home' && (
+          {activeTab !== 'home' && !liveAttributeTables && (
             <DpsBottomPanel
               showResults={dpsResultsVisible}
               statusMode={dpsStatusMode}
               area={dpsArea}
               onZoomToPlot={handleZoomToPlot}
+            />
+          )}
+
+          {/* Simple floating table for a live "attribute" table loaded from
+              GIS Database Connections, docked to the bottom of whichever map
+              is currently shown. */}
+          {liveAttributeTables && (
+            <SimpleDataTable
+              tables={liveAttributeTables}
+              onClose={() => setLiveAttributeTables(null)}
             />
           )}
 
@@ -180,6 +246,7 @@ function App() {
                 onFeatureSelect={handleFeatureSelect}
                 geojsonData={selectedUploadGeojson?.layers}
                 layerColors={layerColors}
+                paused={isOverlayOpen}
               />
             ) : (
               <MapComponent
@@ -206,6 +273,8 @@ function App() {
           {adminModalOpen && user.is_superuser && (
             <AdminDashboard
               onClose={() => setAdminModalOpen(false)}
+              onLayerLoaded={handleLiveLayersLoaded}
+              onAttributeLoaded={handleLiveAttributeTablesLoaded}
             />
           )}
 
@@ -225,6 +294,18 @@ function App() {
                 setValidateModalOpen(true);
               }}
               onGeojsonSelected={handleGeojsonSelected}
+              user={user}
+            />
+          )}
+
+          {loadDataPanelOpen && (
+            <LoadDataPanel
+              onClose={() => setLoadDataPanelOpen(false)}
+              onLayerLoaded={handleLiveLayersLoaded}
+              onAttributeLoaded={handleLiveAttributeTablesLoaded}
+              alreadyLoaded={loadedLiveTableNames}
+              filtersByTable={liveFiltersByTable}
+              onFiltersByTableChange={setLiveFiltersByTable}
             />
           )}
         </div>

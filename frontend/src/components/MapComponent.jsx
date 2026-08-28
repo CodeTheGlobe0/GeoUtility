@@ -155,8 +155,7 @@ const MapComponent = ({
     }
   };
 
-  // Initialize Map on mount (this component only mounts for the Data QC tab,
-  // so it opens directly on the Dubai, UAE region)
+  // Initialize Map on mount (this component only mounts for the Data QC tab)
   useEffect(() => {
     const baseTile = new TileLayer({
       source: new OSM(),
@@ -186,9 +185,12 @@ const MapComponent = ({
       // Double-click is repurposed to show a feature's attribute popup
       // instead of the default zoom-in.
       interactions: defaultInteractions({ doubleClickZoom: false }),
+      // Neutral whole-world view — no auto-zoom to any fixed coordinate on
+      // load. The view only moves once an upload is actually selected (see
+      // the geojsonData effect below).
       view: new View({
-        center: fromLonLat([87.739202, 22.659946]),
-        zoom: 12,
+        center: fromLonLat([0, 20]),
+        zoom: 2,
       }),
     });
     mapInstance.current = map;

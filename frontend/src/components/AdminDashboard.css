@@ -19,36 +19,36 @@
 
 /* Dashboard Header */
 .dashboard-header {
-  height: 65px;
+  height: 56px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 40px;
+  padding: 0 28px;
   background: var(--navbar-bg);
   box-sizing: border-box;
 }
 
 .dashboard-title-group h3 {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 800;
   margin: 0;
   color: var(--text-primary);
 }
 
 .dashboard-title-group p {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  margin: 2px 0 0 0;
+  margin: 1px 0 0 0;
 }
 
 .back-map-btn {
   background: var(--accent);
   color: #ffffff;
   border: none;
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -58,26 +58,61 @@
   background: var(--accent-dark);
 }
 
+/* Section Tabs (Users / GIS Database Connections) */
+.admin-section-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 28px 0 28px;
+  box-sizing: border-box;
+}
+
+.admin-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-tab-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.admin-tab-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
 /* Stats Metric Cards */
 .stats-cards-row {
   display: flex;
-  gap: 20px;
-  padding: 24px 40px;
+  gap: 12px;
+  padding: 16px 28px;
   box-sizing: border-box;
 }
 
 .stat-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 12px 14px;
   flex: 1;
-  box-shadow: 0 4px 20px var(--shadow-color);
+  box-shadow: 0 2px 10px var(--shadow-color);
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   box-sizing: border-box;
   transition: all 0.3s ease;
+  min-width: 0;
 }
 
 .stat-card:hover {
@@ -86,34 +121,39 @@
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: var(--input-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .stat-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .stat-value {
-  font-size: 1.8rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--text-primary);
-  line-height: 1;
-  margin-bottom: 4px;
+  line-height: 1.15;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   color: var(--text-muted);
 }
 
@@ -121,8 +161,8 @@
 .dashboard-content {
   flex: 1;
   display: flex;
-  gap: 30px;
-  padding: 0 40px 30px 40px;
+  gap: 20px;
+  padding: 0 28px 20px 28px;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -134,8 +174,8 @@
   flex-direction: column;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 14px;
+  padding: 16px;
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: 0 4px 20px var(--shadow-color);
@@ -143,18 +183,18 @@
 
 .registry-header-actions {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .search-input-field {
   flex: 1;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
@@ -169,9 +209,9 @@
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0 18px;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -210,9 +250,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 8px;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   cursor: pointer;
@@ -236,17 +276,17 @@
 
 .item-username {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .item-email {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 /* Right Pane: Inspector details & forms */
@@ -254,8 +294,8 @@
   flex: 0.8;
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 30px;
+  border-radius: 14px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -267,19 +307,19 @@
 .profile-badge-summary {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 24px;
-  margin-bottom: 24px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .inspector-avatar {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--accent);
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -290,11 +330,11 @@
 .inspector-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .inspector-name-title {
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: var(--text-primary);
   margin: 0;
@@ -304,17 +344,17 @@
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: #f87171;
-  padding: 10px;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  padding: 9px;
+  border-radius: 8px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 15px;
+  margin-top: 12px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   transition: all 0.3s ease;
 }
 
@@ -353,4 +393,123 @@
   .registry-pane {
     max-height: 400px;
   }
+}
+
+/* Live Data section (GisConnectionsPanel) */
+.live-data-section {
+  margin: 0 28px 20px 28px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+.live-data-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.live-data-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.live-data-hint {
+  margin: 6px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.live-data-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.live-data-table-list {
+  list-style: none;
+  margin: 10px 0 0 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.live-data-table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+}
+
+.live-data-table-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.live-data-table-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-data-level-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
+.live-data-level-badge.layer {
+  color: #34d399;
+}
+
+.live-data-level-badge.attribute {
+  color: #f472b6;
+}
+
+.live-data-load-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.live-data-load-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.live-data-load-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

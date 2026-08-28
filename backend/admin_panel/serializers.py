@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
+from .models import GISDatabaseConnection
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -112,4 +114,41 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'is_superuser': self.user.is_superuser,
         }
         return data
+
+
+class GISDatabaseConnectionSerializer(serializers.ModelSerializer):
+    """Used for list/retrieve. The password is never included in output."""
+
+    class Meta:
+        model = GISDatabaseConnection
+        fields = ['id', 'gisdbtype', 'gisapplication', 'instance', 'database', 'username', 'projection', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = fields
+
+
+class GISDatabaseConnectionCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    class Meta:
+        model = GISDatabaseConnection
+        fields = ['id', 'gisdbtype', 'gisapplication', 'instance', 'database', 'username', 'password', 'projection', 'is_active']
+        read_only_fields = ['id']
+
+
+class GISDatabaseConnectionUpdateSerializer(serializers.ModelSerializer):
+    # Optional on update: omit it in the request to leave the stored password unchanged.
+    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
+
+    class Meta:
+        model = GISDatabaseConnection
+        fields = ['id', 'gisdbtype', 'gisapplication', 'instance', 'database', 'username', 'password', 'projection', 'is_active']
+        read_only_fields = ['id']
+        extra_kwargs = {
+            'gisdbtype': {'required': False},
+            'gisapplication': {'required': False},
+            'instance': {'required': False},
+            'database': {'required': False},
+            'username': {'required': False},
+            'projection': {'required': False},
+            'is_active': {'required': False},
+        }
 

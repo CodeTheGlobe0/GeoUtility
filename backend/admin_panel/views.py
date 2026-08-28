@@ -6,11 +6,15 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import GISDatabaseConnection
 from .serializers import (
     UserSerializer,
     UserCreateSerializer,
     UserUpdateSerializer,
-    CustomTokenObtainPairSerializer
+    CustomTokenObtainPairSerializer,
+    GISDatabaseConnectionSerializer,
+    GISDatabaseConnectionCreateSerializer,
+    GISDatabaseConnectionUpdateSerializer,
 )
 
 # Custom Permission Classes
@@ -102,3 +106,19 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
+
+class GISDatabaseConnectionViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for GIS database connection configs (SQLSERVER/POSTGRES/ORACLE).
+    Staff/Superusers only, since these are infrastructure credentials.
+    """
+    queryset = GISDatabaseConnection.objects.all()
+    permission_classes = [permissions.IsAuthenticated, IsStaffOrSuperuser]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return GISDatabaseConnectionCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return GISDatabaseConnectionUpdateSerializer
+        return GISDatabaseConnectionSerializer

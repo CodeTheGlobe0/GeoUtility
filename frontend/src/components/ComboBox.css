@@ -1,0 +1,66 @@
+/* Searchable dropdown used inside filter/query builders. Styled to match
+   the dark glass look of the popups that currently embed it (vmodal/uplist
+   family), independent of the app's basemap-driven light/dark theme. */
+
+.combobox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.combobox-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #f1f5f9;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+.combobox-input:focus {
+  outline: none;
+  border-color: rgba(94, 234, 212, 0.4);
+}
+
+.combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  background: rgba(15, 25, 48, 0.98);
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  padding: 4px;
+}
+
+.combobox-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.combobox-option:hover {
+  background: rgba(94, 234, 212, 0.12);
+}
+
+.combobox-hint {
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
