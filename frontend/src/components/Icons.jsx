@@ -278,6 +278,14 @@ export const IconKey = ({ size = 18, ...props }) => (
   </svg>
 );
 
+export const IconDatabase = ({ size = 18, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <ellipse cx="12" cy="5.5" rx="8" ry="3" />
+    <path d="M4 5.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+    <path d="M4 11.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+  </svg>
+);
+
 export const IconPalette = ({ size = 18, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="M12 3.5c-4.7 0-8.5 3.6-8.5 8 0 3 2.1 4.8 4.3 4.8.9 0 1.4-.5 1.4-1.2 0-.6-.4-.9-.4-1.6 0-.7.6-1.3 1.4-1.3h1.7c2.7 0 5.1-1.9 5.1-4.8 0-3.1-2.6-3.9-5-3.9z" />

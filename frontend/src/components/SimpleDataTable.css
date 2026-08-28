@@ -1,0 +1,156 @@
+/* Simple floating data table docked to the bottom of the map, for plain
+   (non-spatial) attribute tables loaded from a live GIS database connection. */
+
+.sdt-panel {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  max-height: 280px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px var(--shadow-color);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.sdt-panel.collapsed {
+  max-height: 42px;
+}
+
+.sdt-header {
+  height: 42px;
+  min-height: 42px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.sdt-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sdt-header-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.sdt-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdt-tab:hover {
+  color: var(--text-primary);
+}
+
+.sdt-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.sdt-row-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sdt-header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.sdt-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sdt-icon-btn:hover {
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.sdt-body {
+  overflow: auto;
+  flex: 1;
+}
+
+.sdt-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sdt-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.78rem;
+}
+
+.sdt-table th,
+.sdt-table td {
+  padding: 7px 12px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sdt-table th {
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.3px;
+  z-index: 1;
+}
+
+.sdt-table td {
+  color: var(--text-primary);
+}
+
+.sdt-table tbody tr:hover {
+  background: var(--input-bg);
+}

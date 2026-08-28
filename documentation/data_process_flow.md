@@ -1,6 +1,8 @@
-# Data Process Flow — Upload, List & GeoJSON
+# Data Process Flow — Upload, List, GeoJSON, Live Database & Push-to-Database
 
-This document explains **what actually happens, step by step, inside the code** when someone calls one of the five `data_process` APIs. It is written for a developer who has never seen this app before and needs to trace a bug or add a feature without guessing.
+This document explains **what actually happens, step by step, inside the code** when someone calls one of the eight `data_process` APIs. It is written for a developer who has never seen this app before and needs to trace a bug or add a feature without guessing.
+
+The first five APIs (sections 3–7) work entirely with **uploaded files** (`.gdb`/`.shp` zips). The last three (sections 8–10) work with a **live external GIS database** instead — reading its tables directly, and pushing an upload's data into it — via `admin_panel.models.GISDatabaseConnection` and `components/db_loader.py`.
 
 All diagrams use [Mermaid](https://mermaid.js.org/) — they render automatically on GitHub and in most modern code editors (VS Code, JetBrains, etc.) when viewing this `.md` file.
 
@@ -102,9 +104,11 @@ flowchart TD
 | `backend/data_process/views.py` | The "traffic controller" — receives the HTTP request, calls the right helpers, decides the HTTP response. Deliberately kept thin. |
 | `backend/data_process/serializers.py` | All **input validation** logic lives here. Views never validate anything themselves. |
 | `backend/data_process/models.py` | The database table (`FileUploadRecord`) + `get_extraction_relative_path()`, the helper that computes where an upload's zip gets extracted to. |
-| `backend/data_process/components/geo_reader.py` | The `GeoReader` class — everything about reading a validated upload's spatial data lives here: finding the `.gdb`/`.shp`(s) on disk (`resolve_source_paths()`) and converting them to GeoJSON (`read_as_geojson()`), using `geopandas`/`pyogrio`. |
+| `backend/data_process/components/geo_reader.py` | The `GeoReader` class — everything about reading a validated upload's spatial data lives here: finding the `.gdb`/`.shp`(s) on disk (`resolve_source_paths()`), converting them to GeoJSON (`read_as_geojson()`) or to raw GeoDataFrames for a database write (`read_as_geodataframes()`), using `geopandas`/`pyogrio`. |
+| `backend/data_process/components/db_loader.py` | The `GISDatabaseLoader` class — the live-database counterpart to `GeoReader`. Connects to whichever `GISDatabaseConnection` is `is_active` (PostgreSQL/PostGIS, SQL Server, or Oracle), lists/reads its tables, and writes an uploaded feature class into it. |
+| `backend/admin_panel/models.py` | `GISDatabaseConnection` — the saved connection config (host, credentials, `is_active` flag) that `db_loader.py` connects with. Not owned by `data_process`, but everything in sections 8–10 reads it. |
 
-This is a deliberate layering: **serializers validate, models describe upload data + storage paths, views orchestrate, `GeoReader` owns everything about locating and reading GIS data.** If you're fixing a validation bug, go to `serializers.py`. If you're fixing "wrong features returned" or "can't find the .gdb/.shp", go to `components/geo_reader.py`. If you're fixing "wrong HTTP status/response shape", go to `views.py`.
+This is a deliberate layering: **serializers validate, models describe upload data + storage paths, views orchestrate, `GeoReader` owns everything about locating and reading uploaded GIS data, `GISDatabaseLoader` owns everything about talking to a live external GIS database.** If you're fixing a validation bug, go to `serializers.py`. If you're fixing "wrong features returned" or "can't find the .gdb/.shp" from an **upload**, go to `components/geo_reader.py`. If you're fixing anything about the **live database** (wrong tables listed, a write went to the wrong table, a connection error), go to `components/db_loader.py`. If you're fixing "wrong HTTP status/response shape", go to `views.py`.
 
 Two things live in `views.py` itself rather than a dedicated file, since they're small and only used by views: `_get_owned_record(request, pk)` (the admin-or-owner lookup shared by the GeoJSON, update, and delete endpoints) and `_extract_and_save(record, ...)` (the zip-extraction + DB-save steps shared by upload and update). `DataValidateSerializer` and `UploadUpdateSerializer` similarly share their zip-structure validation via a `ZipPayloadValidationMixin` in `serializers.py`, so the create and update rules can never quietly drift apart.
 
@@ -447,7 +451,235 @@ There's no request body and no response body — a successful delete is just `20
 
 ---
 
-## 8. Quick reference table
+## 8. API #6 — Load Live Data: `GET /api/data-process/load-data/`
+
+**Purpose:** everything so far reads *uploaded files*. This endpoint instead reads directly from a **live external database** — whichever `admin_panel.models.GISDatabaseConnection` row currently has `is_active=True`. With no `?table=` parameter, it lists every table on that database. See section 9 for loading one table's actual data.
+
+### Step-by-step trace
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant U as urls.py
+    participant V as views.py<br/>LoadDataView
+    participant DB as admin_panel.GISDatabaseConnection
+    participant L as components/db_loader.py<br/>GISDatabaseLoader
+    participant EXT as External GIS Database
+
+    C->>U: GET /api/data-process/load-data/
+    U->>V: routes to LoadDataView.get()
+    V->>DB: GISDatabaseConnection.objects.filter(is_active=True).first()
+    alt none active
+        V-->>C: 400 Bad Request<br/>("no connection is currently active")
+    end
+    V->>L: GISDatabaseLoader(connection)
+    V->>L: loader.detect_database_kind()
+    L->>EXT: query the engine's own system catalog for<br/>gdb_items/gdb_itemtypes/sde_layers/sde_versions
+    EXT-->>L: which (if any) exist
+    L-->>V: {"kind": "ARCGIS" | "NORMAL", "matched_tables": [...]}
+    Note over V: no ?table= param -> list every table
+    V->>L: loader.list_all_tables()
+    L->>L: list_tables() - spatial tables only<br/>(has a geometry/geography/SDO_GEOMETRY column)
+    L->>L: _list_all_table_names_<engine>() - every table, spatial or not
+    L->>L: merge: spatial ones tagged level="layer",<br/>everything else tagged level="attribute"
+    L-->>V: [{"table": ..., "level": ..., "geometry_column"?: ..., ...}, ...]
+    alt any step raised GISConnectionError
+        V-->>C: 502 Bad Gateway<br/>(errors.connection: underlying driver message)
+    else success
+        V-->>C: 200 OK + database_kind + matched_tables + tables[]
+    end
+```
+
+### `detect_database_kind()` — why it runs first, every time
+
+Before listing or reading anything, `LoadDataView` always calls `loader.detect_database_kind()` first (see `GISDatabaseLoader.detect_database_kind` in `db_loader.py`). It checks whether any of four Esri system-table names exist on the connected database, case-insensitively:
+
+| Marker table | What it means |
+|---|---|
+| `gdb_items`, `gdb_itemtypes` | Modern (10.1+) Esri File/Enterprise Geodatabase catalog tables |
+| `sde_layers`, `sde_versions` | Classic ArcSDE catalog tables |
+
+If any are found, `database_kind` is `"ARCGIS"`; otherwise `"NORMAL"`. **This is informational only today** — the result is included in every `load-data` response (`data.database_kind`, `data.matched_tables`), but nothing downstream currently branches on it. It exists so a future change (e.g. reading ArcGIS's versioned/branch layers differently from a plain table) has a place to hook in without re-deriving "is this ArcGIS?" from scratch.
+
+### `list_all_tables()` — how "layer" vs. "attribute" is decided
+
+1. `list_tables()` queries each engine's **spatial metadata catalog** — `geometry_columns` (Postgres), `sys.columns` joined against `sys.types` filtered to `geometry`/`geography` (SQL Server), or `user_sdo_geom_metadata` (Oracle) — returning only tables that have a geometry column.
+2. A second, engine-specific query lists **every** table regardless of geometry: `information_schema.tables` (Postgres, excluding `pg_catalog`/`information_schema`), `sys.tables` joined to `sys.schemas` (SQL Server), or `user_tables` (Oracle).
+3. The two lists are merged by short table name (case-insensitive, schema prefix and any `"`/`[]` quoting stripped): anything present in the spatial list gets `"level": "layer"` plus its `geometry_column`/`srid`/`geometry_type`; everything else gets `"level": "attribute"`.
+
+The frontend uses this `level` to decide how to render each table: a `"layer"` gets loaded onto the map, an `"attribute"` table gets loaded into the simple floating table.
+
+### Response shape
+
+```json
+{
+  "success": true,
+  "message": "12 table(s) found on 'db.internal:5432/gis_prod'.",
+  "data": {
+    "connection": { "id": 1, "gisdbtype": "POSTGRES", "instance": "db.internal:5432", "database": "gis_prod" },
+    "database_kind": "NORMAL",
+    "matched_tables": [],
+    "tables": [
+      { "table": "public.parcels", "level": "layer", "geometry_column": "geom", "srid": 4326, "geometry_type": "MULTIPOLYGON" },
+      { "table": "public.zoning_lookup", "level": "attribute" }
+    ]
+  },
+  "errors": null
+}
+```
+
+### Error cases at a glance
+
+| Situation | HTTP status | Where it's raised |
+|---|---|---|
+| No `GISDatabaseConnection` has `is_active=True` | `400` | `LoadDataView.get`, before touching `GISDatabaseLoader` at all |
+| Connection refused, DNS failure, bad credentials, table doesn't exist, etc. | `502` | Any per-engine helper in `db_loader.py` catches the driver's own exception and re-raises `GISConnectionError` with a descriptive message; the view catches that one exception type and turns it into a `502` |
+
+---
+
+## 9. API #7 — Load Live Data, One Table: `GET /api/data-process/load-data/?table=<name>`
+
+**Purpose:** same URL as section 8, with a `table` query parameter — reads that table's actual rows instead of just listing it, auto-detecting whether it's a spatial layer or a plain attribute table.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant V as views.py<br/>LoadDataView
+    participant L as components/db_loader.py<br/>GISDatabaseLoader
+    participant EXT as External GIS Database
+
+    C->>V: GET /api/data-process/load-data/?table=public.parcels
+    Note over V: same active-connection lookup + detect_database_kind()<br/>as section 8
+    V->>L: loader.load_table("public.parcels")
+    L->>L: is this short name present in list_tables()<br/>(the spatial catalog)?
+    alt yes - it's a spatial layer
+        L->>L: read_table_as_geojson(table_name)
+        Note over L: Postgres: geopandas.read_postgis()<br/>SQL Server: SELECT ..., [geom].STAsText() AS __wkt_geom<br/>Oracle: SELECT ..., SDO_UTIL.TO_WKTGEOMETRY(geom) AS __wkt_geom
+        L->>L: reproject to EPSG:4326, build FeatureCollection
+        L-->>V: {"level": "layer", "geojson": {...}}
+    else no - plain attribute table
+        L->>L: read_table_as_records(table_name)
+        Note over L: plain SELECT * via geopandas/pyodbc/oracledb,<br/>no geometry handling at all
+        L-->>V: {"level": "attribute", "records": [...]}
+    end
+    V-->>C: 200 OK + level + (geojson | records)
+```
+
+### Why SQL Server and Oracle convert geometry to WKT in the query itself
+
+Postgres has a first-class Python binding for its geometry type (`geopandas.read_postgis` understands PostGIS's binary format directly). SQL Server and Oracle don't have an equivalent lightweight Python-side decoder available here, so instead the **SQL query itself** does the conversion — `.STAsText()` (SQL Server) and `SDO_UTIL.TO_WKTGEOMETRY()` (Oracle) both convert the native geometry value to a WKT (Well-Known Text) string *inside the database*, which any `shapely`/`geopandas` version can parse identically regardless of source engine. This is why `_rows_to_feature_collection()` in `db_loader.py` looks the same for both engines — by the time it runs, the engine-specific part is already done.
+
+### Response shape (either variant)
+
+See section 22 in `Api_document.md` for full JSON examples of both the `"layer"` and `"attribute"` shapes.
+
+### Error cases at a glance
+
+Same as section 8 (`400` if no connection is active, `502` for any connection/query failure) — `load_table()` doesn't introduce any new failure mode of its own, it just dispatches to whichever read path applies.
+
+---
+
+## 10. API #8 — Push Upload to Database: `POST /api/data-process/uploads/<id>/push-to-database/`
+
+**Purpose:** the reverse direction of sections 8–9 — instead of *reading* the live database, this *writes* into it, using an already-validated upload as the source. For every feature class in the upload, it checks whether a same-named table already exists on the active connection: if so, the upload's rows are **appended**; if not, the table is **created first** (with a matching geometry column), then the rows are inserted.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant V as views.py<br/>UploadPushToDatabaseView
+    participant DB as Database
+    participant G as components/geo_reader.py<br/>GeoReader
+    participant L as components/db_loader.py<br/>GISDatabaseLoader
+    participant EXT as External GIS Database
+
+    C->>V: POST /api/data-process/uploads/11/push-to-database/
+    V->>DB: _get_owned_record(request, pk=11)
+    alt not found / not yours
+        V-->>C: 404 Not Found
+    end
+    alt record.status != SUCCESS
+        V-->>C: 400 Bad Request
+    end
+    V->>DB: GISDatabaseConnection.objects.filter(is_active=True).first()
+    alt none active
+        V-->>C: 400 Bad Request
+    end
+    V->>G: GeoReader(record).read_as_geodataframes()
+    Note over G: same file resolution as read_as_geojson() (section 5),<br/>but returns live GeoDataFrames (real datetime/number dtypes,<br/>not JSON) instead of converting to GeoJSON
+    alt no layers found
+        V-->>C: 400 Bad Request<br/>("no feature classes to push")
+    end
+    loop each layer_name, gdf in layers
+        V->>V: table_name = _safe_table_name(layer_name)<br/>(e.g. "asia/in" -> "asia_in")
+        V->>L: loader.write_geodataframe(table_name, gdf)
+        L->>L: table_exists(table_name)?
+        alt table already exists
+            L->>EXT: append gdf's rows to the existing table
+        else table doesn't exist
+            L->>EXT: CREATE TABLE (columns inferred from gdf's dtypes<br/>+ a geometry column matching gdf.geometry)
+            L->>EXT: insert gdf's rows into the new table
+        end
+        L-->>V: {"created": bool, "row_count": len(gdf)}
+        V->>V: record result: {layer, table, action, row_count}
+    end
+    alt a GISConnectionError was raised partway through
+        V-->>C: 502 Bad Gateway<br/>+ however many results were collected before the failure
+    else all layers processed
+        V-->>C: 200 OK + results[] (per-layer created/appended + row_count)
+    end
+```
+
+### `read_as_geodataframes()` vs. `read_as_geojson()` — why a separate method
+
+`GeoReader.read_as_geojson()` (used by section 5's endpoint) deliberately stringifies datetime columns and JSON-encodes everything, because GeoJSON is a JSON format. A database write needs the **opposite**: real `datetime`/`int`/`float` Python values, so the new table's columns can be created with proper types (`DATETIME2` instead of `NVARCHAR`, etc.) and so the target database stores genuine typed values, not date-strings. `read_as_geodataframes()` shares the exact same file-resolution and layer-reading code as `read_as_geojson()` (both now route through the same private `_read_gdb_as_geodataframes`/`_read_shp_as_geodataframes` helpers) but stops one step earlier — it reprojects to WGS84 and returns the live `GeoDataFrame`, without the datetime-to-string or JSON conversion step. `read_as_geojson()` is now implemented as a thin wrapper: read the GeoDataFrames, then convert each one with `_feature_collection()`.
+
+### How each engine actually writes
+
+| Engine | Method | How create-vs-append is decided | How the write happens |
+|---|---|---|---|
+| PostgreSQL | `_write_geodataframe_postgres` | Not decided explicitly — `geopandas.GeoDataFrame.to_postgis(if_exists="append")` creates the table automatically the first time (via GeoAlchemy2, with a proper PostGIS geometry column + SRID) and appends on every later call. `already_existed` (from `table_exists()`) is only used to report `"created"` vs `"appended"` back to the caller. |
+| SQL Server | `_write_geodataframe_sqlserver` | `table_exists()` is checked explicitly first. If new: `CREATE TABLE` with one column per `GeoDataFrame` column — `geometry` type for the geometry column, else a type picked from the pandas dtype (`BIT`/`BIGINT`/`FLOAT`/`DATETIME2`/`NVARCHAR(MAX)`, see `_sqlserver_column_type`). Then `cursor.executemany()` inserts every row, with the geometry column bound as `geometry::STGeomFromText(?, 4326)`. |
+| Oracle | `_write_geodataframe_oracle` | Same pattern as SQL Server: `CREATE TABLE` (if new) with an `SDO_GEOMETRY` column plus dtype-mapped columns (`NUMBER(1)`/`NUMBER(19)`/`BINARY_DOUBLE`/`TIMESTAMP`/`NCLOB`, see `_oracle_column_type`), then `cursor.executemany()` inserting each row with the geometry column bound as `SDO_UTIL.FROM_WKTGEOMETRY(:n)`. |
+
+`_sql_safe_value()` is a small shared helper that runs on every non-geometry value before it's bound as a query parameter — it unwraps numpy scalars (`int64`, `float64`, `bool_`, ...) to plain Python values, turns `NaN`/`NaT`/`None` into `None`, and converts a pandas `Timestamp` to a plain `datetime`. Without it, `pyodbc`/`oracledb` would either reject numpy-typed values outright or silently mis-bind them.
+
+### Known limitations (disclosed, not hidden)
+
+- **Only the PostgreSQL write path has been exercised against a real database** (via `to_postgis`, a well-trodden geopandas feature). The SQL Server and Oracle write paths are implemented against each vendor's documented SQL (confirmed to run without crashing against a live-but-unreachable test connection, returning a clean `502` rather than a stack trace) but have not been verified against a real reachable instance of either engine.
+- **The Oracle write path does not register the new geometry column in `USER_SDO_GEOM_METADATA` or build a spatial index.** Oracle Spatial requires that bookkeeping (which itself requires knowing the layer's real coordinate extent) before a `SDO_GEOMETRY` column can be used in spatial queries or indexed — the column is written and readable via plain SQL, but a newly *created* table's geometry column won't be spatially query-able until that's done as a separate step.
+- **Only spatial feature classes are pushed.** A `.gdb`'s plain, non-spatial tables are skipped by `GeoReader` entirely (same as the GeoJSON endpoint, section 5) — there's currently no code path that reads or pushes those.
+- **Not transactional across layers.** If layer 3 of 5 fails, layers 1–2 are already committed to the external database and stay that way — `results` in the error response tells the caller exactly how far it got, so a retry (after fixing the underlying issue) can be reasoned about, but the caller can't "undo" the partial push automatically.
+
+### Response shape
+
+```json
+{
+  "success": true,
+  "message": "Pushed 2 feature class(es) to 'db.internal:5432/gis_prod' (1 created, 1 appended).",
+  "data": {
+    "connection": { "id": 1, "instance": "db.internal:5432", "database": "gis_prod" },
+    "results": [
+      { "layer": "PARCEL", "table": "PARCEL", "action": "appended", "row_count": 240 },
+      { "layer": "asia/in", "table": "asia_in", "action": "created", "row_count": 18 }
+    ]
+  },
+  "errors": null
+}
+```
+
+### Error cases at a glance
+
+| Situation | HTTP status | Why |
+|---|---|---|
+| `id` doesn't exist, or belongs to another user (and you're not an admin) | `404` | Same `_get_owned_record` rule as sections 5–7. |
+| Upload exists but `status != SUCCESS` | `400` | Nothing was ever extracted, so there's nothing to read/push. |
+| No `GISDatabaseConnection` has `is_active=True` | `400` | Nowhere to push to. |
+| Upload has no spatial feature classes (e.g. only plain tables) | `400` | Nothing for `write_geodataframe()` to do. |
+| A write fails partway through (bad credentials, connection drop, disallowed column type, etc.) | `502` | Wraps whichever `GISConnectionError` the failing per-engine write method raised; `data.results` shows progress up to the failure. |
+
+---
+
+## 11. Quick reference table
 
 | # | Endpoint | Method | Entry point | Touches DB? | Touches disk? |
 |---|---|---|---|---|---|
@@ -456,12 +688,15 @@ There's no request body and no response body — a successful delete is just `20
 | 3 | `/api/data-process/uploads/<id>/geojson/` | `GET` | `views.UploadGeoJSONView.get` | Reads 1 row (any row if admin, else filtered by user) | Reads the extracted `.gdb`/`.shp` |
 | 4 | `/api/data-process/uploads/<id>/` | `PUT` | `views.UploadDetailView.put` | Reads + updates 1 row (any row if admin, else filtered by user) | Deletes old extracted files, writes new ones |
 | 5 | `/api/data-process/uploads/<id>/` | `DELETE` | `views.UploadDetailView.delete` | Deletes 1 row (any row if admin, else filtered by user) | Deletes the extracted files |
+| 6 | `/api/data-process/load-data/` | `GET` | `views.LoadDataView.get` | Reads the active `GISDatabaseConnection` row only | No (queries the *external* live database, not `MEDIA_ROOT`) |
+| 7 | `/api/data-process/load-data/?table=<name>` | `GET` | `views.LoadDataView.get` | Reads the active `GISDatabaseConnection` row only | No (queries the external live database) |
+| 8 | `/api/data-process/uploads/<id>/push-to-database/` | `POST` | `views.UploadPushToDatabaseView.post` | Reads 1 upload row + the active `GISDatabaseConnection` row | Reads the extracted `.gdb`/`.shp`; **writes** to the external live database |
 
-All five require a valid JWT (`Authorization: Bearer <access_token>`) — see `documentation/Api_document.md` for auth endpoints.
+All eight require a valid JWT (`Authorization: Bearer <access_token>`) — see `documentation/Api_document.md` for auth endpoints. Endpoints 6–8 additionally require `IsStaffOrSuperuser` (they use stored external-database credentials), unlike 1–5 which only require `IsAuthenticated`.
 
 ---
 
-## 9. Glossary (plain language)
+## 12. Glossary (plain language)
 
 - **`.gdb` (File Geodatabase):** a folder (not a single file!) that ESRI/ArcGIS uses to store one or more layers of spatial data together. One `.gdb` can contain many "feature classes" (layers) — e.g. `PARCEL`, `ROADS`, `BOUNDARY` all inside the same `.gdb`.
 - **`.shp` (Shapefile):** an older, simpler format. Always comes as a *group* of files sharing the same name (`thing.shp`, `thing.shx`, `thing.dbf`, ...) — the `.shp` alone is useless without its `.shx`/`.dbf` siblings.
@@ -470,3 +705,8 @@ All five require a valid JWT (`Authorization: Bearer <access_token>`) — see `d
 - **GeoJSON:** a JSON-based standard format for spatial data that web maps understand natively. A `FeatureCollection` is just "a list of Features" wrapped with a `type` label.
 - **CRS / EPSG:4326:** the "coordinate system" a shape's numbers are measured in. `EPSG:4326` is WGS84 — plain latitude/longitude, the one every web map (Leaflet, Mapbox, Google Maps) expects.
 - **base64:** a way to represent binary data (like a zip file) as plain text, so it can be sent inside a JSON request body.
+- **`GISDatabaseConnection`:** a saved config (`admin_panel/models.py`) for one external GIS database — host, credentials, engine type. Exactly one can have `is_active=True` at a time (enforced by the model's own `save()`); every "live database" feature (sections 8–10) always reads/writes whichever one that is.
+- **`GISDatabaseLoader`:** the class in `components/db_loader.py` that actually talks to the live external database — the live-database counterpart to `GeoReader` (which only ever reads *uploaded files*).
+- **WKT (Well-Known Text):** a plain-text way to represent a geometry, e.g. `POLYGON((0 0, 1 0, 1 1, 0 0))`. Used as a lingua franca here: SQL Server's `.STAsText()` and Oracle's `SDO_UTIL.TO_WKTGEOMETRY()` both convert their engine-native geometry to WKT so the exact same Python code (`shapely.wkt.loads`) can turn it into a real geometry object regardless of source engine.
+- **`SDO_GEOMETRY`:** Oracle Spatial's native geometry column type — Oracle's equivalent of PostGIS's `geometry` type or SQL Server's `geometry`/`geography` types.
+- **ArcGIS marker tables:** `gdb_items`/`gdb_itemtypes` (modern Esri geodatabases) or `sde_layers`/`sde_versions` (classic ArcSDE) — system catalog tables whose mere presence identifies a database as an Esri geodatabase rather than a plain spatial database. See section 8.

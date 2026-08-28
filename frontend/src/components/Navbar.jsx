@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Navbar.css';
 import ytIcon from '../assets/yticon.png';
-import { IconShield, IconUser, IconLogOut, IconLayers } from './Icons';
+import { IconShield, IconUser, IconLogOut, IconUpload, IconLayers } from './Icons';
 
-const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onUploadsClick, activeTab, onTabChange, dark }) => {
+const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onUploadsClick, onLoadDataClick, activeTab, onTabChange, dark }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -92,8 +92,20 @@ const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onUploadsCl
             title="GIS Data Uploads"
             onClick={onUploadsClick}
           >
-            <IconLayers size={15} />
+            <IconUpload size={15} />
           </button>
+
+          {/* Load Data panel trigger (staff/superusers only — matches the
+              backend's IsStaffOrSuperuser gate on the load-data endpoint) */}
+          {(user.is_staff || user.is_superuser) && (
+            <button
+              className="validate-control-btn"
+              title="Load Live Data"
+              onClick={onLoadDataClick}
+            >
+              <IconLayers size={15} />
+            </button>
+          )}
 
           {/* Admin panel gear button (Visible to superusers only) */}
           {user.is_superuser && (

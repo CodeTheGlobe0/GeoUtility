@@ -215,6 +215,45 @@
   text-overflow: ellipsis;
 }
 
+/* Attribute Inspector list: "key: value" rows instead of a table — names
+   and values vary wildly in length and count depending on the source data,
+   so each wraps independently and .hcd-table-wrap scrolls rather than
+   clipping or stretching the card. */
+.hcd-attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.hcd-attr-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.hcd-attr-key {
+  color: #94a3b8;
+  font-weight: 700;
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow-wrap: break-word;
+}
+
+.hcd-attr-colon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.hcd-attr-value {
+  color: #f1f5f9;
+  font-weight: 500;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 .hcd-check-list {
   list-style: none;
   margin: 0;
@@ -349,6 +388,16 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+}
+
+.hcd-table-wrap::-webkit-scrollbar {
+  width: 5px;
+}
+
+.hcd-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
 }
 
 /* Reusable empty-state block: icon + title + subtitle, centered in

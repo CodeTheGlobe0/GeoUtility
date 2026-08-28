@@ -1,0 +1,294 @@
+/* Load Live Data popup — extends the vmodal and uplist dark glass look from
+   ValidateModal.css and UploadsPanel.css, which stays dark regardless of the
+   app's basemap-driven theme. */
+
+.ldp-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ldp-filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ldp-filter-checkbox input[type='checkbox'] {
+  accent-color: #5eead4;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.ldp-refresh-btn {
+  margin-left: auto;
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  color: #5eead4;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ldp-refresh-btn:hover:not(:disabled) {
+  background: rgba(94, 234, 212, 0.22);
+}
+
+.ldp-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ldp-select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 10px;
+}
+
+.ldp-select-all input[type='checkbox'] {
+  accent-color: #5eead4;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.ldp-table-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ldp-table-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ldp-table-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(94, 234, 212, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ldp-filter-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+  padding: 6px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ldp-filter-toggle:hover {
+  border-color: rgba(94, 234, 212, 0.4);
+  color: #5eead4;
+}
+
+.ldp-filter-toggle.active {
+  border-color: rgba(94, 234, 212, 0.4);
+  color: #5eead4;
+  background: rgba(94, 234, 212, 0.1);
+}
+
+.ldp-filter-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.ldp-filter-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  margin-left: 28px;
+  border-left: 2px solid rgba(94, 234, 212, 0.25);
+}
+
+.ldp-filter-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.ldp-condition-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* These two land on the ComboBox wrapper div (not a raw input) — only flex
+   sizing belongs here, the actual input/dropdown styling lives in
+   ComboBox.css so it stays consistent everywhere ComboBox is used. */
+.ldp-condition-field,
+.ldp-condition-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.ldp-condition-op {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #f1f5f9;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+.ldp-condition-remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.ldp-condition-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.ldp-add-condition-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px dashed rgba(94, 234, 212, 0.35);
+  color: #5eead4;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ldp-add-condition-btn:hover {
+  background: rgba(94, 234, 212, 0.1);
+}
+
+.ldp-row-checkbox {
+  flex-shrink: 0;
+  display: flex;
+  cursor: pointer;
+}
+
+.ldp-row-checkbox input[type='checkbox'] {
+  accent-color: #5eead4;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.ldp-table-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ldp-table-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #f1f5f9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ldp-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #94a3b8;
+}
+
+.ldp-level-badge.layer {
+  color: #5eead4;
+}
+
+.ldp-level-badge.attribute {
+  color: #f472b6;
+}
+
+.ldp-load-selected-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(94, 234, 212, 0.18);
+}
+
+.ldp-load-selected-bar span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.ldp-load-selected-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  color: #5eead4;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.ldp-load-selected-btn:hover:not(:disabled) {
+  background: rgba(94, 234, 212, 0.22);
+}
+
+.ldp-load-selected-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

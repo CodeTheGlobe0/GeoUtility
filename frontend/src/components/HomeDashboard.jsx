@@ -206,16 +206,17 @@ const HomeDashboard = ({ selectedFeature, validationHistory = [], userId, layerC
             <>
               <div className="hcd-feature-name">{selectedFeature.name}</div>
               {Object.keys(selectedFeature.attributes || {}).length > 0 ? (
-                <table className="hcd-table">
-                  <thead>
-                    <tr><th>Attribute</th><th>Value</th></tr>
-                  </thead>
-                  <tbody>
+                <div className="hcd-table-wrap">
+                  <div className="hcd-attr-list">
                     {Object.entries(selectedFeature.attributes).map(([key, value]) => (
-                      <tr key={key}><td>{key}</td><td>{String(value)}</td></tr>
+                      <div className="hcd-attr-row" key={key}>
+                        <span className="hcd-attr-key" title={key}>{key}</span>
+                        <span className="hcd-attr-colon">:</span>
+                        <span className="hcd-attr-value" title={String(value)}>{String(value)}</span>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               ) : (
                 <span className="hcd-hint">No additional attributes in source data.</span>
               )}
@@ -232,14 +233,6 @@ const HomeDashboard = ({ selectedFeature, validationHistory = [], userId, layerC
 
       {/* Right column */}
       <div className="hcd-col hcd-col-right">
-        <div {...cardStyle('system-health', 'hcd-card-sm')}>
-          <div className="hcd-card-header" onPointerDown={startDrag('system-health')}><span>System Health Monitor</span></div>
-          <ul className="hcd-check-list">
-            <li><IconCheckCircle size={13} /> Recognized GIS</li>
-            <li><IconCheckCircle size={13} /> Processed</li>
-          </ul>
-        </div>
-
         {/* Schema Scorecard / Geometry Charts */}
         <div {...cardStyle('schema-compliance', 'hcd-card-accent hcd-card-lg')}>
           <div className="hcd-card-header" onPointerDown={startDrag('schema-compliance')}><span>Schema Compliance</span></div>

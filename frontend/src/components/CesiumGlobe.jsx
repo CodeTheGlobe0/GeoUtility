@@ -6,12 +6,6 @@ import { IconGlobe, IconMap } from "./Icons";
 import ProjectionBadge from "./ProjectionBadge";
 
 const KMZ_URL = "/AGI_HQ.kmz";
-// Same Dubai, UAE coordinates used as the default view in MapComponent.jsx (Data QC tab)
-const TARGET_DESTINATION = Cesium.Cartesian3.fromDegrees(
-  88.360051,
-  22.58867,
-  15000,
-);
 
 // No Cesium ion account needed: Esri/ArcGIS World Imagery is a free, no-API-key
 // satellite service — the same one already used for the Data QC map's
@@ -85,18 +79,19 @@ const extractFeatureAttributes = (entity) => {
   return attrs;
 };
 
-const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
+const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors, paused = false }) => {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const uploadDataSourcesRef = useRef([]);
   // Kept in a ref so the (mount-once) viewer effect can call the latest
   // callback without needing to re-run and rebuild the whole Cesium viewer.
   const onFeatureSelectRef = useRef(onFeatureSelect);
-  // Tracks whether an upload's GeoJSON is already selected when this component
-  // (re)mounts — e.g. navigating Home -> Data QC -> Home. The intro flyTo
-  // below must not fight the geojsonData effect's flyTo for the camera.
-  const geojsonDataRef = useRef(geojsonData);
   const uploadExtentRef = useRef(null);
+  // Lets full-screen overlays (Admin Dashboard, etc.) that sit on top of but
+  // don't actually resize this container tell the globe to stop rendering —
+  // otherwise Cesium keeps burning CPU/GPU on a completely hidden globe,
+  // which is what was causing the whole app to feel laggy while those were open.
+  const pausedRef = useRef(paused);
   const [is2D, setIs2D] = useState(false);
 
   useEffect(() => {
@@ -104,8 +99,18 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
   }, [onFeatureSelect]);
 
   useEffect(() => {
-    geojsonDataRef.current = geojsonData;
-  }, [geojsonData]);
+    pausedRef.current = paused;
+    const viewer = viewerRef.current;
+    // viewerRef.current can briefly still point at an already-destroyed
+    // Viewer during React StrictMode's mount->cleanup->remount cycle (the
+    // mount effect below nulls it out on cleanup, but ordering between
+    // separate effects means this one can run in that window) — guard with
+    // isDestroyed() too, not just a null check.
+    if (!viewer || viewer.isDestroyed()) return;
+    const rect = containerRef.current?.getBoundingClientRect();
+    const hasSize = rect && rect.width > 0 && rect.height > 0;
+    viewer.useDefaultRenderLoop = !paused && hasSize;
+  }, [paused]);
 
   useEffect(() => {
     // Explicitly avoid any Cesium ion dependency (no token/account required)
@@ -125,12 +130,50 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
       selectionIndicator: false,
       infoBox: false,
       shouldAnimate: true,
+      // We handle render-loop failures ourselves (see renderError listener
+      // below) instead of Cesium's own blocking "An error occurred while
+      // rendering" dialog.
+      showRenderLoopErrors: false,
     });
 
     viewerRef.current = viewer;
     viewer.scene.globe.enableLighting = true;
     viewer.scene.skyAtmosphere.show = true;
     viewer.cesiumWidget.creditContainer.style.display = "none";
+    viewer.useDefaultRenderLoop = !pausedRef.current;
+
+    // Guard against Cesium's render loop crashing with "Expected width to be
+    // greater than 0, actual value was 0" — this container can momentarily
+    // report 0x0 (e.g. a devtools toggle or a window resize mid-layout).
+    // Pausing the render loop whenever the container has no area (or a
+    // full-screen overlay has asked us to pause), and resuming once neither
+    // is true, avoids feeding Cesium a zero-sized framebuffer entirely.
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (viewer.isDestroyed()) return;
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      viewer.useDefaultRenderLoop = !pausedRef.current && width > 0 && height > 0;
+    });
+    resizeObserver.observe(containerRef.current);
+
+    // Belt-and-suspenders: Cesium's own per-frame resize check runs
+    // synchronously inside render(), so it can hit a momentary 0x0 container
+    // before the ResizeObserver callback above ever fires. When that
+    // happens, Cesium permanently halts its render loop (useDefaultRenderLoop
+    // flips to false internally) — self-heal by resuming it as soon as the
+    // container has real dimensions again (and nothing has asked us to stay
+    // paused), instead of leaving the globe frozen/blank until a full reload.
+    const removeRenderErrorListener = viewer.scene.renderError.addEventListener((scene, error) => {
+      console.error("CesiumGlobe: render loop stopped by an internal error; attempting recovery.", error);
+      requestAnimationFrame(() => {
+        if (viewer.isDestroyed()) return;
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!pausedRef.current && rect && rect.width > 0 && rect.height > 0) {
+          viewer.useDefaultRenderLoop = true;
+        }
+      });
+    });
 
     // Keep the 2D/3D toggle button label in sync with the scene's actual
     // mode, whether it changed via that button or the auto-morph-on-data-load.
@@ -147,10 +190,11 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
 
     let cancelled = false;
 
-    // Shortly after mount, fly down from space into the target location.
-    // The KML overlay is still loaded (so any renderable placemarks show up
-    // on the globe), but the camera always ends up at the Dubai coordinates
-    // shared with the Data QC map, regardless of what the KMZ contains.
+    // Load the KML overlay in the background so any renderable placemarks
+    // are available once panned to, but stay on the whole-globe space view
+    // set above — no auto fly-in to any fixed coordinate on login/load. The
+    // camera only moves once the user actually loads an upload (handled by
+    // the geojsonData effect below).
     const introTimer = setTimeout(async () => {
       if (cancelled) return;
       try {
@@ -162,17 +206,6 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
         await viewer.dataSources.add(dataSource);
       } catch (err) {
         console.error("CesiumGlobe: failed to load KMZ overlay.", err);
-      }
-      if (cancelled) return;
-      // Skip the default Dubai fly-in when an upload's GeoJSON is already
-      // selected — the geojsonData effect below owns the camera in that case,
-      // otherwise this would fly back over it a moment later.
-      if (!geojsonDataRef.current) {
-        viewer.camera.flyTo({
-          destination: TARGET_DESTINATION,
-          duration: 3.5,
-          easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
-        });
       }
     }, 600);
 
@@ -200,7 +233,15 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
       clearTimeout(introTimer);
       clickHandler.destroy();
       removeMorphListener();
+      removeRenderErrorListener();
+      resizeObserver.disconnect();
       viewer.destroy();
+      // Clear the ref immediately so any effect/callback that reads
+      // viewerRef.current during the window before a StrictMode remount
+      // creates a new viewer sees "no viewer" instead of a destroyed one.
+      if (viewerRef.current === viewer) {
+        viewerRef.current = null;
+      }
     };
   }, []);
 
@@ -292,15 +333,16 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors }) => {
       if (loadedSources.some((ds) => ds.entities.values.length)) {
         const scene = viewer.scene;
 
-        // Once the uploaded data is in view, flatten from the 3D globe into
-        // a 2D map — the same cinematic morph used for the space-to-Esri
-        // intro, just landing flat instead of a tilted 3D perspective.
-        if (scene.mode !== Cesium.SceneMode.SCENE2D) {
+        // Google Earth-style: fly straight down into the data in 3D — no
+        // flattening to 2D first. If the user had manually switched to 2D
+        // beforehand, morph back to 3D first so the fly-in always lands as
+        // a tilted 3D perspective, then fly to the data's bounds.
+        if (scene.mode !== Cesium.SceneMode.SCENE3D) {
           const removeListener = scene.morphComplete.addEventListener(() => {
             removeListener();
             if (!cancelled) flyToUploadedBounds(viewer);
           });
-          scene.morphTo2D(2.0);
+          scene.morphTo3D(2.0);
         } else {
           flyToUploadedBounds(viewer);
         }

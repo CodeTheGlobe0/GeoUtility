@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../config';
 import './ProfileModal.css'; // sharing basic modal alerts
 import './AdminDashboard.css';
-import { IconUsers, IconStar, IconBriefcase, IconUser, IconShield, IconTrash } from './Icons';
+import { IconUsers, IconStar, IconBriefcase, IconUser, IconShield, IconTrash, IconDatabase } from './Icons';
+import GisConnectionsPanel from './GisConnectionsPanel';
 
-const AdminDashboard = ({ onClose }) => {
+const AdminDashboard = ({ onClose, onLayerLoaded, onAttributeLoaded }) => {
+  const [activeSection, setActiveSection] = useState('users'); // 'users' | 'gis'
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -253,10 +255,30 @@ const AdminDashboard = ({ onClose }) => {
         </button>
       </header>
 
+      {/* Section Tabs */}
+      <nav className="admin-section-tabs">
+        <button
+          className={`admin-tab-btn ${activeSection === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveSection('users')}
+        >
+          <IconUsers size={15} /> Users
+        </button>
+        <button
+          className={`admin-tab-btn ${activeSection === 'gis' ? 'active' : ''}`}
+          onClick={() => setActiveSection('gis')}
+        >
+          <IconDatabase size={15} /> GIS Database Connections
+        </button>
+      </nav>
+
+      {activeSection === 'gis' ? (
+        <GisConnectionsPanel onLayerLoaded={onLayerLoaded} onAttributeLoaded={onAttributeLoaded} />
+      ) : (
+      <>
       {/* Metrics Row */}
       <section className="stats-cards-row">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#eef2ff', color: '#2563eb' }}><IconUsers size={20} /></div>
+          <div className="stat-icon" style={{ background: '#eef2ff', color: '#2563eb' }}><IconUsers size={16} /></div>
           <div className="stat-info">
             <span className="stat-value">{totalCount}</span>
             <span className="stat-label">Total Users</span>
@@ -264,7 +286,7 @@ const AdminDashboard = ({ onClose }) => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#f472b6' }}><IconStar size={18} /></div>
+          <div className="stat-icon" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#f472b6' }}><IconStar size={15} /></div>
           <div className="stat-info">
             <span className="stat-value">{superAdminsCount}</span>
             <span className="stat-label">Super Admins</span>
@@ -272,7 +294,7 @@ const AdminDashboard = ({ onClose }) => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399' }}><IconBriefcase size={19} /></div>
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#34d399' }}><IconBriefcase size={16} /></div>
           <div className="stat-info">
             <span className="stat-value">{staffOperatorsCount}</span>
             <span className="stat-label">Staff Operators</span>
@@ -280,7 +302,7 @@ const AdminDashboard = ({ onClose }) => {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'rgba(100, 116, 139, 0.1)', color: '#94a3b8' }}><IconUser size={19} /></div>
+          <div className="stat-icon" style={{ background: 'rgba(100, 116, 139, 0.1)', color: '#94a3b8' }}><IconUser size={16} /></div>
           <div className="stat-info">
             <span className="stat-value">{regularUsersCount}</span>
             <span className="stat-label">Regular Users</span>
@@ -506,6 +528,8 @@ const AdminDashboard = ({ onClose }) => {
           )}
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 };
