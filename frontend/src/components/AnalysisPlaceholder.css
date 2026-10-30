@@ -1,0 +1,42 @@
+.analysis-placeholder {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 32px);
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  box-shadow: 0 8px 24px var(--shadow-color);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.analysis-placeholder strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.analysis-placeholder small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.analysis-placeholder-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+}

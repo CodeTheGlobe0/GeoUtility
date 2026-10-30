@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -6,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import GISDatabaseConnection
+from .models import GISDatabaseConnection, User
 from .serializers import (
     UserSerializer,
     UserCreateSerializer,

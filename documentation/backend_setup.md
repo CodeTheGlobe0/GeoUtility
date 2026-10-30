@@ -161,18 +161,18 @@ rm main.py
 
 ---
 
-## Step 6: Create & Register the `admin_panel` App
+## Step 6: Create & Register the `admin_user` App
 
 1. Generate the app structure:
    ```bash
-   uv run python manage.py startapp admin_panel
+   uv run python manage.py startapp admin_user
    ```
 
 2. Register the app in `config/settings.py`:
    ```python
    INSTALLED_APPS = [
        ...
-       "admin_panel",
+       "admin_user",
    ]
    ```
 
@@ -183,9 +183,9 @@ rm main.py
 
 ---
 
-## Step 7: Implement serializers in `admin_panel`
+## Step 7: Implement serializers in `admin_user`
 
-Create `admin_panel/serializers.py` to handle data serialization and validate role promotions (only staff/superusers can set role privileges):
+Create `admin_user/serializers.py` to handle data serialization and validate role promotions (only staff/superusers can set role privileges):
 ```python
 from django.contrib.auth.models import User
 from rest_framework import serializers
@@ -271,9 +271,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 ---
 
-## Step 8: Implement Views in `admin_panel`
+## Step 8: Implement Views in `admin_user`
 
-Open `admin_panel/views.py` and write the endpoints:
+Open `admin_user/views.py` and write the endpoints:
 ```python
 from django.contrib.auth.models import User
 from rest_framework import viewsets, permissions, status, generics
@@ -353,7 +353,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 ## Step 9: Configure URL Routing
 
-1. Create `admin_panel/urls.py` to route requests:
+1. Create `admin_user/urls.py` to route requests:
    ```python
    from django.urls import path, include
    from rest_framework.routers import DefaultRouter
@@ -377,7 +377,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
    urlpatterns = [
        path("admin/", admin.site.urls),
-       path("api/auth/", include("admin_panel.urls")),
+       path("api/auth/", include("admin_user.urls")),
        path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
    ]
    ```
@@ -402,5 +402,5 @@ redis>=8.0.1
 Run internal checks and tests to verify:
 ```bash
 uv run python manage.py check
-uv run python manage.py test admin_panel
+uv run python manage.py test admin_user
 ```

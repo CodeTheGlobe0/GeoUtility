@@ -6,7 +6,9 @@ const ProfileModal = ({ onClose, onUpdateSuccess }) => {
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [project, setProject] = useState('');
   const [email, setEmail] = useState('');
+  const [analysisTypes, setAnalysisTypes] = useState([]); // read-only, assigned by an admin
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,7 +40,9 @@ const ProfileModal = ({ onClose, onUpdateSuccess }) => {
           setUsername(data.username || '');
           setFirstName(data.first_name || '');
           setLastName(data.last_name || '');
+          setProject(data.project || '');
           setEmail(data.email || '');
+          setAnalysisTypes(data.analysis_types || []);
         } else {
           setError(data.detail || 'Failed to retrieve profile details.');
         }
@@ -71,6 +75,7 @@ const ProfileModal = ({ onClose, onUpdateSuccess }) => {
       username: username,
       first_name: firstName,
       last_name: lastName,
+      project: project,
       email: email,
     };
     if (password.trim() !== '') {
@@ -101,6 +106,7 @@ const ProfileModal = ({ onClose, onUpdateSuccess }) => {
           username: data.username,
           first_name: data.first_name,
           last_name: data.last_name,
+          project: data.project,
           email: data.email,
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -146,6 +152,19 @@ const ProfileModal = ({ onClose, onUpdateSuccess }) => {
           {error && <div className="modal-alert error">{error}</div>}
 
           <div className="modal-form-group">
+            <label>Analysis types</label>
+            <div className="profile-analysis-types">
+              {analysisTypes.length === 0 ? (
+                <span className="profile-analysis-empty">None assigned yet</span>
+              ) : (
+                analysisTypes.map((t) => (
+                  <span key={t.id} className="profile-analysis-chip">{t.name}</span>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="modal-form-group">
             <label htmlFor="profile_username">Username</label>
             <input
               type="text"
@@ -182,6 +201,19 @@ const ProfileModal = ({ onClose, onUpdateSuccess }) => {
               onChange={(e) => setLastName(e.target.value)}
               disabled={loading}
               placeholder="Last Name"
+            />
+          </div>
+
+          <div className="modal-form-group">
+            <label htmlFor="project">Project</label>
+            <input
+              type="text"
+              id="project"
+              className="modal-form-input"
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+              disabled={loading}
+              placeholder="Project"
             />
           </div>
 

@@ -1,6 +1,6 @@
 """
 Connects to whichever external GIS database is currently marked active
-(admin_panel.models.GISDatabaseConnection.is_active) and reads spatial data
+(admin_user.models.GISDatabaseConnection.is_active) and reads spatial data
 from it — the live-database counterpart to GeoReader (which reads uploaded
 .gdb/.shp files instead).
 
@@ -69,6 +69,20 @@ class GISFilterError(Exception):
 class GISDatabaseLoader:
     def __init__(self, connection):
         self.connection = connection
+        self._postgres_engine_cache = None
+
+    def close(self) -> None:
+        """
+        Disposes the cached PostgreSQL engine (if one was created), closing
+        every pooled connection immediately instead of waiting on garbage
+        collection. A fresh GISDatabaseLoader is created per request (see
+        views.py), so callers should call this once they're done with it —
+        every view does, in a `finally` block. No-op for SQL Server/Oracle,
+        which already close their raw connection per call.
+        """
+        if self._postgres_engine_cache is not None:
+            self._postgres_engine_cache.dispose()
+            self._postgres_engine_cache = None
 
     def _host_port(self, default_port: int):
         instance = (self.connection.instance or "").strip()
@@ -311,6 +325,20 @@ class GISDatabaseLoader:
     # ------------------------------------------------------------------
 
     def _postgres_engine(self):
+        """
+        Cached per loader instance: a single request often calls this many
+        times (e.g. reading one layer looks up its geometry column via a
+        separate metadata query, then reads the actual rows), and each
+        SQLAlchemy Engine owns its own connection pool — creating a fresh one
+        per call opened far more PostgreSQL connections than necessary,
+        every one left for garbage collection to eventually close. Reusing
+        one engine per loader (a loader's lifetime is one request — see
+        views.py) means one pool per request instead, explicitly disposed by
+        close() when the request finishes.
+        """
+        if self._postgres_engine_cache is not None:
+            return self._postgres_engine_cache
+
         try:
             from sqlalchemy import create_engine
             from sqlalchemy.engine import URL
@@ -332,7 +360,8 @@ class GISDatabaseLoader:
             database=c.database,
         )
         try:
-            return create_engine(url)
+            self._postgres_engine_cache = create_engine(url)
+            return self._postgres_engine_cache
         except Exception as e:
             raise GISConnectionError(f"Failed to create PostgreSQL engine: {e}") from e
 

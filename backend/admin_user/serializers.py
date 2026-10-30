@@ -1,22 +1,53 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import GISDatabaseConnection
+from admin_gis.models import AnalysisType, AssignAnalysisType
 
-class UserSerializer(serializers.ModelSerializer):
+from .models import GISDatabaseConnection, User
+
+
+def analysis_types_of(user):
+    """The user's assigned analysis types as [{id, name}], DataQC first."""
+    return [
+        {'id': a.analysis_type_id, 'name': a.analysis_type.name}
+        for a in user.analysis_type_assignments.select_related('analysis_type').order_by('analysis_type_id')
+    ]
+
+
+class AnalysisTypesMixin(serializers.Serializer):
+    """
+    Read: `analysis_types` = [{id, name}].
+    Write: `analysis_type_ids` = [id, ...] replaces the user's assignments
+    (staff/superusers only; omit it to leave assignments unchanged).
+    """
+    analysis_types = serializers.SerializerMethodField()
+    analysis_type_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=AnalysisType.objects.all(), write_only=True, required=False
+    )
+
+    def get_analysis_types(self, user):
+        return analysis_types_of(user)
+
+    def validate_analysis_type_ids(self, value):
+        request = self.context.get('request')
+        if request and not (request.user.is_staff or request.user.is_superuser):
+            raise serializers.ValidationError("Only staff or superusers can assign analysis types.")
+        return value
+
+
+class UserSerializer(AnalysisTypesMixin, serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'date_joined']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'project', 'analysis_types', 'is_staff', 'is_superuser', 'date_joined']
         read_only_fields = ['id', 'date_joined']
 
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(AnalysisTypesMixin, serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'project', 'analysis_types', 'analysis_type_ids', 'password', 'is_staff', 'is_superuser']
 
     def validate(self, attrs):
         request = self.context.get('request')
@@ -32,19 +63,22 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password')
+        analysis_types = validated_data.pop('analysis_type_ids', None)
         # We manually instantiate so we can call set_password
         user = User(**validated_data)
         user.set_password(password)
         user.save()
+        if analysis_types is not None:
+            AssignAnalysisType.set_for_user(user, analysis_types)
         return user
 
 
-class UserUpdateSerializer(serializers.ModelSerializer):
+class UserUpdateSerializer(AnalysisTypesMixin, serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'project', 'analysis_types', 'analysis_type_ids', 'password', 'is_staff', 'is_superuser']
         extra_kwargs = {
             'username': {'required': False},
             'email': {'required': False},
@@ -73,11 +107,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
+        analysis_types = validated_data.pop('analysis_type_ids', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if password:
             instance.set_password(password)
         instance.save()
+        if analysis_types is not None:
+            AssignAnalysisType.set_for_user(instance, analysis_types)
         return instance
 
 
@@ -110,6 +147,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'id': self.user.id,
             'username': self.user.username,
             'email': self.user.email,
+            'project': self.user.project,
+            'analysis_types': analysis_types_of(self.user),
             'is_staff': self.user.is_staff,
             'is_superuser': self.user.is_superuser,
         }

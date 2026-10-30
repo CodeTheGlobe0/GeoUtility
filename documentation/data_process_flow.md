@@ -2,7 +2,7 @@
 
 This document explains **what actually happens, step by step, inside the code** when someone calls one of the eight `data_process` APIs. It is written for a developer who has never seen this app before and needs to trace a bug or add a feature without guessing.
 
-The first five APIs (sections 3–7) work entirely with **uploaded files** (`.gdb`/`.shp` zips). The last three (sections 8–10) work with a **live external GIS database** instead — reading its tables directly, and pushing an upload's data into it — via `admin_panel.models.GISDatabaseConnection` and `components/db_loader.py`.
+The first five APIs (sections 3–7) work entirely with **uploaded files** (`.gdb`/`.shp` zips). The last three (sections 8–10) work with a **live external GIS database** instead — reading its tables directly, and pushing an upload's data into it — via `admin_user.models.GISDatabaseConnection` and `components/db_loader.py`.
 
 All diagrams use [Mermaid](https://mermaid.js.org/) — they render automatically on GitHub and in most modern code editors (VS Code, JetBrains, etc.) when viewing this `.md` file.
 
@@ -106,7 +106,7 @@ flowchart TD
 | `backend/data_process/models.py` | The database table (`FileUploadRecord`) + `get_extraction_relative_path()`, the helper that computes where an upload's zip gets extracted to. |
 | `backend/data_process/components/geo_reader.py` | The `GeoReader` class — everything about reading a validated upload's spatial data lives here: finding the `.gdb`/`.shp`(s) on disk (`resolve_source_paths()`), converting them to GeoJSON (`read_as_geojson()`) or to raw GeoDataFrames for a database write (`read_as_geodataframes()`), using `geopandas`/`pyogrio`. |
 | `backend/data_process/components/db_loader.py` | The `GISDatabaseLoader` class — the live-database counterpart to `GeoReader`. Connects to whichever `GISDatabaseConnection` is `is_active` (PostgreSQL/PostGIS, SQL Server, or Oracle), lists/reads its tables, and writes an uploaded feature class into it. |
-| `backend/admin_panel/models.py` | `GISDatabaseConnection` — the saved connection config (host, credentials, `is_active` flag) that `db_loader.py` connects with. Not owned by `data_process`, but everything in sections 8–10 reads it. |
+| `backend/admin_user/models.py` | `GISDatabaseConnection` — the saved connection config (host, credentials, `is_active` flag) that `db_loader.py` connects with. Not owned by `data_process`, but everything in sections 8–10 reads it. |
 
 This is a deliberate layering: **serializers validate, models describe upload data + storage paths, views orchestrate, `GeoReader` owns everything about locating and reading uploaded GIS data, `GISDatabaseLoader` owns everything about talking to a live external GIS database.** If you're fixing a validation bug, go to `serializers.py`. If you're fixing "wrong features returned" or "can't find the .gdb/.shp" from an **upload**, go to `components/geo_reader.py`. If you're fixing anything about the **live database** (wrong tables listed, a write went to the wrong table, a connection error), go to `components/db_loader.py`. If you're fixing "wrong HTTP status/response shape", go to `views.py`.
 
@@ -453,7 +453,7 @@ There's no request body and no response body — a successful delete is just `20
 
 ## 8. API #6 — Load Live Data: `GET /api/data-process/load-data/`
 
-**Purpose:** everything so far reads *uploaded files*. This endpoint instead reads directly from a **live external database** — whichever `admin_panel.models.GISDatabaseConnection` row currently has `is_active=True`. With no `?table=` parameter, it lists every table on that database. See section 9 for loading one table's actual data.
+**Purpose:** everything so far reads *uploaded files*. This endpoint instead reads directly from a **live external database** — whichever `admin_user.models.GISDatabaseConnection` row currently has `is_active=True`. With no `?table=` parameter, it lists every table on that database. See section 9 for loading one table's actual data.
 
 ### Step-by-step trace
 
@@ -462,7 +462,7 @@ sequenceDiagram
     participant C as Client
     participant U as urls.py
     participant V as views.py<br/>LoadDataView
-    participant DB as admin_panel.GISDatabaseConnection
+    participant DB as admin_user.GISDatabaseConnection
     participant L as components/db_loader.py<br/>GISDatabaseLoader
     participant EXT as External GIS Database
 
@@ -705,7 +705,7 @@ All eight require a valid JWT (`Authorization: Bearer <access_token>`) — see `
 - **GeoJSON:** a JSON-based standard format for spatial data that web maps understand natively. A `FeatureCollection` is just "a list of Features" wrapped with a `type` label.
 - **CRS / EPSG:4326:** the "coordinate system" a shape's numbers are measured in. `EPSG:4326` is WGS84 — plain latitude/longitude, the one every web map (Leaflet, Mapbox, Google Maps) expects.
 - **base64:** a way to represent binary data (like a zip file) as plain text, so it can be sent inside a JSON request body.
-- **`GISDatabaseConnection`:** a saved config (`admin_panel/models.py`) for one external GIS database — host, credentials, engine type. Exactly one can have `is_active=True` at a time (enforced by the model's own `save()`); every "live database" feature (sections 8–10) always reads/writes whichever one that is.
+- **`GISDatabaseConnection`:** a saved config (`admin_user/models.py`) for one external GIS database — host, credentials, engine type. Exactly one can have `is_active=True` at a time (enforced by the model's own `save()`); every "live database" feature (sections 8–10) always reads/writes whichever one that is.
 - **`GISDatabaseLoader`:** the class in `components/db_loader.py` that actually talks to the live external database — the live-database counterpart to `GeoReader` (which only ever reads *uploaded files*).
 - **WKT (Well-Known Text):** a plain-text way to represent a geometry, e.g. `POLYGON((0 0, 1 0, 1 1, 0 0))`. Used as a lingua franca here: SQL Server's `.STAsText()` and Oracle's `SDO_UTIL.TO_WKTGEOMETRY()` both convert their engine-native geometry to WKT so the exact same Python code (`shapely.wkt.loads`) can turn it into a real geometry object regardless of source engine.
 - **`SDO_GEOMETRY`:** Oracle Spatial's native geometry column type — Oracle's equivalent of PostGIS's `geometry` type or SQL Server's `geometry`/`geography` types.

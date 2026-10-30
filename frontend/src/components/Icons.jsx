@@ -28,6 +28,13 @@ export const IconMoon = ({ size = 18, ...props }) => {
   );
 };
 
+export const IconSun = ({ size = 18, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <circle cx="12" cy="12" r="5" />
+    <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
+  </svg>
+);
+
 export const IconShield = ({ size = 18, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="M12 3 L19 6 L19 11 C19 16 15.5 19.5 12 21 C8.5 19.5 5 16 5 11 L5 6 Z" />

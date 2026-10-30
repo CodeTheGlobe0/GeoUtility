@@ -803,7 +803,7 @@ Returns saved connection configs for external GIS databases (SQL Server, Postgre
     ]
     ```
 
-`is_active` marks which single connection every "live data" feature (endpoints 21–23 below) reads from or writes to — setting it `true` on one connection automatically flips every other connection's `is_active` back to `false` in the same save (see `admin_panel.models.GISDatabaseConnection.save()`), so at most one connection is ever active at a time.
+`is_active` marks which single connection every "live data" feature (endpoints 21–23 below) reads from or writes to — setting it `true` on one connection automatically flips every other connection's `is_active` back to `false` in the same save (see `admin_user.models.GISDatabaseConnection.save()`), so at most one connection is ever active at a time.
 
 #### Error Response (Non-Staff Request)
 *   **Status Code:** `403 Forbidden`

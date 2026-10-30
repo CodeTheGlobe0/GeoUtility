@@ -1,17 +1,17 @@
 :root {
-  /* Single professional light theme — modeled on modern WebGIS tools
-     (Felt, ArcGIS Online, CARTO): flat white surfaces, muted slate
-     text, restrained blue accent instead of glow/gradient chrome. */
-  --bg-color: #f3f5f8;
+  /* Light theme (greyish, same palette as FinanceApp): flat white surfaces,
+     muted slate text, restrained blue accent. The dark palette is in
+     App.css (.map-dark-theme). */
+  --bg-color: #f4f6f8;
   --card-bg: #ffffff;
   --modal-bg: #ffffff;
   --navbar-bg: #ffffff;
-  --text-color: #3c4655;
-  --text-muted: #6b7686;
-  --border-color: #e3e7ed;
-  --input-bg: #f5f7fa;
-  --text-primary: #101828;
-  --shadow-color: rgba(16, 24, 40, 0.08);
+  --text-color: #454f5b;
+  --text-muted: #637381;
+  --border-color: rgba(145, 158, 171, 0.24);
+  --input-bg: #f9fafb;
+  --text-primary: #1c252e;
+  --shadow-color: rgba(145, 158, 171, 0.14);
 
   --accent: #2563eb;
   --accent-dark: #1d4ed8;

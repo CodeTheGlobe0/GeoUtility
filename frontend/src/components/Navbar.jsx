@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Navbar.css';
 import ytIcon from '../assets/yticon.png';
-import { IconShield, IconUser, IconLogOut, IconUpload, IconLayers } from './Icons';
+import { IconShield, IconUser, IconLogOut, IconLayers, IconSun, IconMoon } from './Icons';
 
-const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onUploadsClick, onLoadDataClick, activeTab, onTabChange, dark }) => {
+const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onLoadDataClick, activeTab, analysisTabs = [], onTabChange, dark, onToggleTheme }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -75,24 +75,29 @@ const Navbar = ({ user, onLogoutClick, onProfileClick, onAdminClick, onUploadsCl
         >
           Home
         </button>
-        <button
-          className={`nav-tab-btn ${activeTab === 'data-qc' ? 'active' : ''}`}
-          onClick={() => onTabChange('data-qc')}
-        >
-          Data QC
-        </button>
+        {/* One tab per analysis type assigned to this user */}
+        {analysisTabs.map((t) => (
+          <button
+            key={t.key}
+            className={`nav-tab-btn ${activeTab === t.key ? 'active' : ''}`}
+            onClick={() => onTabChange(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Right Section: User Controls */}
       {user && (
         <div className="navbar-controls" ref={dropdownRef}>
-          {/* GIS Data Uploads panel trigger */}
+          {/* Dark / light theme toggle */}
           <button
             className="validate-control-btn"
-            title="GIS Data Uploads"
-            onClick={onUploadsClick}
+            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle theme"
+            onClick={onToggleTheme}
           >
-            <IconUpload size={15} />
+            {dark ? <IconSun size={15} /> : <IconMoon size={15} />}
           </button>
 
           {/* Load Data panel trigger (staff/superusers only — matches the
