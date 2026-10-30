@@ -11,8 +11,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from admin_panel.models import GISDatabaseConnection
-from admin_panel.views import IsStaffOrSuperuser
+from admin_user.models import GISDatabaseConnection
+from admin_user.views import IsStaffOrSuperuser
 from .serializers import DataValidateSerializer, FileUploadRecordSerializer, UploadUpdateSerializer
 from .models import FileUploadRecord, get_extraction_relative_path
 from .components.geo_reader import GeoReader
@@ -242,7 +242,7 @@ class UploadDetailView(APIView):
 
 class LoadDataView(APIView):
     """
-    Loads spatial data from whichever external GIS database (admin_panel's
+    Loads spatial data from whichever external GIS database (admin_user's
     GISDatabaseConnection) is currently marked active, rather than from an
     uploaded .gdb/.shp file. Staff/superusers only, since it uses stored
     database credentials.
@@ -349,6 +349,8 @@ class LoadDataView(APIView):
                 "data": None,
                 "errors": {"connection": [str(e)]},
             }, status=status.HTTP_502_BAD_GATEWAY)
+        finally:
+            loader.close()
 
 
 def _get_active_connection_or_response():
@@ -414,6 +416,8 @@ class LoadDataColumnsView(APIView):
                 "data": None,
                 "errors": {"connection": [str(e)]},
             }, status=status.HTTP_502_BAD_GATEWAY)
+        finally:
+            loader.close()
 
         return Response({
             "success": True,
@@ -468,6 +472,8 @@ class LoadDataValuesView(APIView):
                 "data": None,
                 "errors": {"connection": [str(e)]},
             }, status=status.HTTP_502_BAD_GATEWAY)
+        finally:
+            loader.close()
 
         return Response({
             "success": True,
@@ -565,6 +571,8 @@ class UploadPushToDatabaseView(APIView):
                 "data": {"connection": connection_info, "results": results},
                 "errors": {"connection": [str(e)]},
             }, status=status.HTTP_502_BAD_GATEWAY)
+        finally:
+            loader.close()
 
         created_count = sum(1 for r in results if r["action"] == "created")
         appended_count = len(results) - created_count

@@ -8,18 +8,28 @@ import ProfileModal from './components/ProfileModal';
 import AdminDashboard from './components/AdminDashboard';
 import ValidateModal from './components/ValidateModal';
 import UploadsPanel from './components/UploadsPanel';
-import HomeDashboard from './components/HomeDashboard';
 import SimpleDataTable from './components/SimpleDataTable';
 import LoadDataPanel from './components/LoadDataPanel';
+import AnalysisPlaceholder from './components/AnalysisPlaceholder';
 import { API_ENDPOINTS } from './config';
 import { buildLayerColorMap } from './utils/layerColors';
 import './App.css';
+import './mapGlass.css'; // after App.css: glass map cards override component backgrounds
 
 function App() {
   const [user, setUser] = useState(null);
 
   // Navigation Tabs State
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'data-qc'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | one of analysisTabs' keys
+  const [allAnalysisTypes, setAllAnalysisTypes] = useState([]); // superusers get a tab for every type
+
+  // Dark / light theme, same as FinanceApp: remembered in localStorage and
+  // stamped on <html data-theme> so every screen can read it.
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  }, [theme]);
   
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
@@ -106,10 +116,7 @@ function App() {
   const [activeBaseLayer, setActiveBaseLayer] = useState('osm');
   const [showGraticule, setShowGraticule] = useState(false);
 
-  // Dark basemaps (Dark Map / Satellite) need dark UI chrome so the navbar,
-  // toolbar, and panels don't clash as white cards floating on a dark map.
-  const isDarkBasemap = activeBaseLayer === 'dark' || activeBaseLayer === 'satellite';
-  const isDarkTheme = activeTab === 'home' || (activeTab === 'data-qc' && isDarkBasemap);
+  const isDarkTheme = theme === 'dark';
 
   // Any of these fully cover the screen without actually resizing the map
   // wrapper underneath, so the Cesium globe would otherwise keep rendering
@@ -135,6 +142,51 @@ function App() {
       }
     }
   }, []);
+
+  // Re-read the signed-in user so a stored session picks up analysis types
+  // assigned (or removed) since login; superusers also load every type.
+  const userId = user?.id;
+  const isSuperuser = !!user?.is_superuser;
+  useEffect(() => {
+    if (!userId) return;
+    const headers = { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` };
+    fetch(`${API_ENDPOINTS.USERS}me/`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => {
+        if (!me) return;
+        setUser((prev) => {
+          const next = { ...prev, ...me };
+          localStorage.setItem('user', JSON.stringify(next));
+          return next;
+        });
+      })
+      .catch((err) => console.error('Failed to refresh user:', err));
+    if (isSuperuser) {
+      fetch(API_ENDPOINTS.ANALYSIS_TYPES, { headers })
+        .then((r) => (r.ok ? r.json() : []))
+        .then(setAllAnalysisTypes)
+        .catch((err) => console.error('Failed to load analysis types:', err));
+    }
+  }, [userId, isSuperuser]);
+
+  // One navbar tab per analysis type the user is assigned (all of them for
+  // superusers). DataQC keeps its existing 'data-qc' workspace.
+  const analysisTabs = useMemo(() => {
+    const types = isSuperuser ? allAnalysisTypes : user?.analysis_types || [];
+    return types.map((t) =>
+      t.name === 'DataQC'
+        ? { key: 'data-qc', label: 'Data QC' }
+        : { key: t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), label: t.name }
+    );
+  }, [isSuperuser, allAnalysisTypes, user?.analysis_types]);
+  const activeAnalysisTab = analysisTabs.find((t) => t.key === activeTab);
+
+  // Losing a type (or logging in as someone without it) sends the user Home
+  useEffect(() => {
+    if (activeTab !== 'home' && !activeAnalysisTab && (!isSuperuser || allAnalysisTypes.length)) {
+      setActiveTab('home');
+    }
+  }, [activeTab, activeAnalysisTab, isSuperuser, allAnalysisTypes.length]);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -201,26 +253,21 @@ function App() {
           <Navbar
             user={user}
             activeTab={activeTab}
+            analysisTabs={analysisTabs}
             onTabChange={handleTabChange}
             onLogoutClick={handleLogout}
             onProfileClick={() => setProfileModalOpen(true)}
             onAdminClick={() => setAdminModalOpen(true)}
-            onUploadsClick={() => setUploadsPanelOpen(true)}
             onLoadDataClick={() => setLoadDataPanelOpen(true)}
             dark={isDarkTheme}
+            onToggleTheme={() => setTheme(isDarkTheme ? 'light' : 'dark')}
           />
 
-          {/* Command-center style dashboard overlay, Home tab only */}
-          {activeTab === 'home' && (
-            <HomeDashboard
-              selectedFeature={selectedFeature}
-              validationHistory={validationHistory}
-              userId={user.id}
-              layerColors={layerColors}
-            />
+          {activeTab !== 'home' && activeTab !== 'data-qc' && activeAnalysisTab && !liveAttributeTables && (
+            <AnalysisPlaceholder label={activeAnalysisTab.label} />
           )}
 
-          {activeTab !== 'home' && !liveAttributeTables && (
+          {activeTab === 'data-qc' && !liveAttributeTables && (
             <DpsBottomPanel
               showResults={dpsResultsVisible}
               statusMode={dpsStatusMode}
@@ -244,12 +291,14 @@ function App() {
             {activeTab === 'home' ? (
               <CesiumGlobe
                 onFeatureSelect={handleFeatureSelect}
+                onUploadsClick={() => setUploadsPanelOpen(true)}
                 geojsonData={selectedUploadGeojson?.layers}
                 layerColors={layerColors}
                 paused={isOverlayOpen}
               />
             ) : (
               <MapComponent
+                onUploadsClick={() => setUploadsPanelOpen(true)}
                 activeBaseLayer={activeBaseLayer}
                 onBaseLayerChange={setActiveBaseLayer}
                 showGraticule={showGraticule}

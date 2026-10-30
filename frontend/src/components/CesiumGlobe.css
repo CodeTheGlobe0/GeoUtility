@@ -52,10 +52,31 @@
   color: #5eead4;
 }
 
-/* Projection badge, stacked directly below the 2D/3D toggle in the same
-   right-edge clearance strip. */
+/* Upload button, same look as the 2D/3D toggle, directly below it */
+.cesium-upload-btn {
+  top: 114px;
+}
+
+/* Search button, below Upload */
+.cesium-search-btn {
+  top: 172px;
+}
+
+.cesium-search-btn.active {
+  background: rgba(94, 234, 212, 0.15);
+  border-color: #5eead4;
+  color: #5eead4;
+}
+
+/* Search box opens to the left of the button column */
+.location-search.cesium-location-search {
+  right: 85px;
+}
+
+/* Projection badge, stacked below the toggle, upload and search buttons in
+   the same right-edge clearance strip. */
 .cesium-projection-badge {
   position: absolute;
-  top: 114px;
+  top: 230px;
   right: 15px;
 }

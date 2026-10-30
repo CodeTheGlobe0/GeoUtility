@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 
 def get_extraction_relative_path(instance) -> str:
@@ -25,7 +25,7 @@ class FileUploadRecord(models.Model):
     ]
 
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='file_uploads',
         help_text="The administrative user who uploaded the file."

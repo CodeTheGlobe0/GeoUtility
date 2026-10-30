@@ -1,0 +1,35 @@
+/* Frosted-glass look for every card that floats over a map (Data QC and the
+   other analysis tabs): toolbar, basemap picker, legend, projection badge,
+   layer explorer, DPS panels, feature popup. Imported after App.css and
+   scoped under .app-main-layout so it wins over each component's own
+   solid background. */
+
+.app-main-layout {
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
+}
+
+.app-main-layout.map-dark-theme {
+  --glass-bg: rgba(17, 29, 53, 0.55);
+  --glass-border: rgba(145, 158, 171, 0.22);
+  --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
+}
+
+.app-main-layout .map-control-toolbar-card,
+.app-main-layout .layers-drawer-panel,
+.app-main-layout .layer-legend-btn,
+.app-main-layout .layer-legend-panel,
+.app-main-layout .projection-badge,
+.app-main-layout .fe-panel,
+.app-main-layout .fe-toggle-tab,
+.app-main-layout .dps-bottom-panel,
+.app-main-layout .dps-left-panel,
+.app-main-layout .analysis-placeholder,
+.app-main-layout .fap-popup {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+}

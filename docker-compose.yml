@@ -1,0 +1,75 @@
+# No host bind mounts: code and nginx configs are baked into the images, so the
+# stack does not depend on Docker Desktop's drive mounts. Rebuild after changes:
+#   docker compose up --build -d
+
+services:
+  backend:
+    restart: unless-stopped
+    build: ./backend
+
+    ports:
+      - "8006:8006"
+
+    environment:
+      - DEBUG=False
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CSRF_TRUSTED_ORIGINS=http://localhost:3006,http://127.0.0.1:3006
+      # Postgres on the host machine. DB_NAME/DB_USER/DB_PASSWORD come from
+      # backend/.env (env_file below).
+      - DB_HOST=host.docker.internal
+
+    volumes:
+      - static:/app/staticfiles
+      - media:/app/media
+
+    # Put SECRET_KEY etc. here. Keys under `environment:` above win over this file.
+    env_file:
+      - path: ./backend/.env
+        required: false
+
+    # Lets GIS connections reach databases running on the host machine.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    networks:
+      - globestack-network
+
+  frontend:
+    restart: unless-stopped
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_BASE_URL=
+
+    depends_on:
+      - backend
+
+    networks:
+      - globestack-network
+
+  # Single entry point for the browser on 3006.
+  nginx:
+    restart: unless-stopped
+    build: ./nginx
+
+    ports:
+      - "3006:3006"
+
+    volumes:
+      - static:/app/staticfiles:ro
+      - media:/app/media:ro
+
+    depends_on:
+      - frontend
+      - backend
+
+    networks:
+      - globestack-network
+
+volumes:
+  static:
+  media:
+
+networks:
+  globestack-network:
+    driver: bridge

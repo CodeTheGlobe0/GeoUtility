@@ -1,8 +1,9 @@
 // Centralized Configuration for API Endpoints
 // Backend base URL is read from frontend/.env (VITE_API_BASE_URL), so it can
-// differ per environment without touching code.
+// differ per environment without touching code. An empty value (the Docker
+// build) means same-origin: nginx proxies /api/ to Django.
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2952';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:2952';
 
 export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}/api/auth/login/`,
@@ -14,6 +15,9 @@ export const API_ENDPOINTS = {
   UPLOAD_GEOJSON: (id) => `${API_BASE_URL}/api/data-process/uploads/${id}/geojson/`,
   UPLOAD_PUSH_TO_DATABASE: (id) => `${API_BASE_URL}/api/data-process/uploads/${id}/push-to-database/`,
   GIS_CONNECTIONS: `${API_BASE_URL}/api/auth/gis-connections/`,
+  // DataQC / Survey / Production; assign them to a user via the USERS
+  // endpoint's `analysis_type_ids`.
+  ANALYSIS_TYPES: `${API_BASE_URL}/api/admin-gis/analysis-types/`,
   LOAD_DATA: `${API_BASE_URL}/api/data-process/load-data/`,
   // `filters`: optional array of { field, op, value } conditions, combined
   // with AND server-side (op defaults to "=" if omitted). Backed by

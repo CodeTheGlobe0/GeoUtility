@@ -21,12 +21,12 @@
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  padding: 6px;
+  padding: 4px;
   box-shadow: 0 4px 16px var(--shadow-color);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   box-sizing: border-box;
 }
 
@@ -71,6 +71,11 @@
 }
 
 /* Disabled future slot buttons */
+.toolbar-action-btn.active {
+  background: var(--hover-tint);
+  color: var(--accent);
+}
+
 .toolbar-action-btn.placeholder {
   opacity: 0.4;
   cursor: not-allowed;
@@ -79,6 +84,16 @@
 .toolbar-action-btn.placeholder:hover {
   background: transparent;
   color: var(--text-color);
+}
+
+/* Collapse / expand toggle at the top of the toolbar */
+.toolbar-toggle-btn {
+  height: 24px;
+  color: var(--text-muted);
+}
+
+.map-control-toolbar-card.collapsed {
+  padding: 3px;
 }
 
 .toolbar-divider {

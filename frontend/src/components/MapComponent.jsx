@@ -15,16 +15,18 @@ import CircleStyle from "ol/style/Circle";
 import Text from "ol/style/Text";
 import Feature from "ol/Feature";
 import GeoJSON from "ol/format/GeoJSON";
-import { IconPlus, IconMinus, IconSearch, IconRuler } from "./Icons";
+import { IconPlus, IconMinus, IconSearch, IconUpload, IconChevronUp, IconChevronDown } from "./Icons";
 import Polygon from "ol/geom/Polygon";
 import { defaults as defaultControls } from "ol/control";
 import { defaults as defaultInteractions } from "ol/interaction";
-import { fromLonLat } from "ol/proj";
+import { fromLonLat, transformExtent } from "ol/proj";
+import Point from "ol/geom/Point";
 import MapLayerSwitcher from "./MapLayerSwitcher";
 import LayerLegend from "./LayerLegend";
 import LayerExplorerPanel from "./LayerExplorerPanel";
 import FeatureAttributePopup from "./FeatureAttributePopup";
 import ProjectionBadge from "./ProjectionBadge";
+import LocationSearch from "./LocationSearch";
 import { hexToRgba } from "../utils/layerColors";
 import "./MapComponent.css";
 
@@ -82,6 +84,7 @@ const styleForSelectedFeature = (geomType) => {
 };
 
 const MapComponent = ({
+  onUploadsClick,
   activeBaseLayer,
   onBaseLayerChange,
   showGraticule,
@@ -109,6 +112,68 @@ const MapComponent = ({
   const selectedFeatureRef = useRef(null);
   const [selectedExplorerKey, setSelectedExplorerKey] = useState(null);
   const [featurePopup, setFeaturePopup] = useState(null);
+
+  // Map controls toolbar can be collapsed to just its toggle; remembered per browser
+  const [controlsOpen, setControlsOpen] = useState(() => {
+    try {
+      return localStorage.getItem("mapControlsOpen") !== "false";
+    } catch {
+      return true;
+    }
+  });
+  // Location search (toolbar Search button); the picked place gets a pin
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchPinLayerRef = useRef(null);
+
+  const handlePlaceSelect = (place) => {
+    const map = mapInstance.current;
+    if (!map) return;
+    const lon = parseFloat(place.lon);
+    const lat = parseFloat(place.lat);
+    const view = map.getView();
+
+    // Nominatim boundingbox = [south, north, west, east] as strings
+    const bb = (place.boundingbox || []).map(parseFloat);
+    if (bb.length === 4 && bb.every(Number.isFinite)) {
+      const extent = transformExtent([bb[2], bb[0], bb[3], bb[1]], "EPSG:4326", view.getProjection());
+      view.fit(extent, { duration: 900, padding: [80, 80, 80, 80], maxZoom: 17 });
+    } else {
+      view.animate({ center: fromLonLat([lon, lat]), zoom: 15, duration: 900 });
+    }
+
+    if (!searchPinLayerRef.current) {
+      searchPinLayerRef.current = new VectorLayer({
+        source: new VectorSource(),
+        zIndex: 999,
+        style: new Style({
+          image: new CircleStyle({
+            radius: 8,
+            fill: new Fill({ color: "#2563eb" }),
+            stroke: new Stroke({ color: "#ffffff", width: 3 }),
+          }),
+        }),
+      });
+      map.addLayer(searchPinLayerRef.current);
+    }
+    const source = searchPinLayerRef.current.getSource();
+    source.clear();
+    source.addFeature(new Feature({ geometry: new Point(fromLonLat([lon, lat])) }));
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    searchPinLayerRef.current?.getSource().clear();
+  };
+
+  const toggleControls = () =>
+    setControlsOpen((open) => {
+      try {
+        localStorage.setItem("mapControlsOpen", String(!open));
+      } catch {
+        // storage unavailable: still toggles for this session
+      }
+      return !open;
+    });
   // Kept in sync via effect so the map's click handlers (registered once on
   // mount) always read the current layer colors, not a stale closure.
   const layerColorsRef = useRef(layerColors);
@@ -571,7 +636,31 @@ const MapComponent = ({
       <div ref={mapRef} className="ol-map" />
 
       {/* Unified GIS Action Toolbar Card */}
-      <div className="map-control-toolbar-card">
+      <div className={`map-control-toolbar-card ${controlsOpen ? "" : "collapsed"}`}>
+        {/* Show / hide the rest of the map controls */}
+        <button
+          className="toolbar-action-btn toolbar-toggle-btn"
+          onClick={toggleControls}
+          title={controlsOpen ? "Hide map controls" : "Show map controls"}
+          aria-expanded={controlsOpen}
+        >
+          {controlsOpen ? <IconChevronUp size={17} /> : <IconChevronDown size={17} />}
+        </button>
+
+        {controlsOpen && (
+        <>
+        <div className="toolbar-divider" />
+
+        {/* GIS Data Uploads panel trigger */}
+        <button
+          className="toolbar-action-btn"
+          onClick={onUploadsClick}
+          title="GIS Data Uploads"
+        >
+          <IconUpload size={17} />
+        </button>
+        <div className="toolbar-divider" />
+
         {/* Zoom In Button */}
         <button
           className="toolbar-action-btn"
@@ -599,23 +688,20 @@ const MapComponent = ({
         />
         <div className="toolbar-divider" />
 
-        {/* Future Expandable Slot Placeholders */}
+        {/* Search a place on the web and zoom to it */}
         <button
-          className="toolbar-action-btn placeholder"
-          title="Search Location (Coming Soon)"
-          disabled
+          className={`toolbar-action-btn ${searchOpen ? "active" : ""}`}
+          title="Search Location"
+          onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+          aria-expanded={searchOpen}
         >
           <IconSearch size={17} />
         </button>
-        <div className="toolbar-divider" />
-        <button
-          className="toolbar-action-btn placeholder"
-          title="Measure Distance (Coming Soon)"
-          disabled
-        >
-          <IconRuler size={17} />
-        </button>
+        </>
+        )}
       </div>
+
+      {searchOpen && controlsOpen && <LocationSearch onSelect={handlePlaceSelect} onClose={closeSearch} />}
 
       <LayerLegend layerColors={layerColors} className="map-layer-legend" />
 

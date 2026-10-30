@@ -1,11 +1,13 @@
 import io
 import zipfile
 import base64
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from .models import FileUploadRecord, get_upload_path
+
+User = get_user_model()
 
 def create_in_memory_zip(file_structure: dict) -> bytes:
     """

@@ -1,6 +1,17 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models, transaction
 
 from .fields import EncryptedCharField
+
+
+class User(AbstractUser):
+    """The project's user model (AUTH_USER_MODEL): Django's user plus a project."""
+    project = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Project this user works on.",
+    )
 
 
 class GISDatabaseConnection(models.Model):

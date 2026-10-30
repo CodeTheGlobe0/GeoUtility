@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import "./CesiumGlobe.css";
-import { IconGlobe, IconMap } from "./Icons";
+import { IconGlobe, IconMap, IconUpload, IconSearch } from "./Icons";
+import LocationSearch from "./LocationSearch";
 import ProjectionBadge from "./ProjectionBadge";
 
 const KMZ_URL = "/AGI_HQ.kmz";
@@ -79,7 +80,7 @@ const extractFeatureAttributes = (entity) => {
   return attrs;
 };
 
-const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors, paused = false }) => {
+const CesiumGlobe = ({ onFeatureSelect, onUploadsClick, geojsonData, layerColors, paused = false }) => {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const uploadDataSourcesRef = useRef([]);
@@ -93,6 +94,54 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors, paused = false
   // which is what was causing the whole app to feel laggy while those were open.
   const pausedRef = useRef(paused);
   const [is2D, setIs2D] = useState(false);
+
+  // Place search (same box as the 2D map); the picked place gets a pin
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchPinRef = useRef(null);
+
+  const removeSearchPin = () => {
+    const viewer = viewerRef.current;
+    if (viewer && !viewer.isDestroyed() && searchPinRef.current) {
+      viewer.entities.remove(searchPinRef.current);
+    }
+    searchPinRef.current = null;
+  };
+
+  const handlePlaceSelect = (place) => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    const lon = parseFloat(place.lon);
+    const lat = parseFloat(place.lat);
+
+    // Nominatim boundingbox = [south, north, west, east] as strings
+    const bb = (place.boundingbox || []).map(parseFloat);
+    const destination =
+      bb.length === 4 && bb.every(Number.isFinite)
+        ? Cesium.Rectangle.fromDegrees(bb[2], bb[0], bb[3], bb[1])
+        : Cesium.Cartesian3.fromDegrees(lon, lat, 5000);
+    viewer.camera.flyTo({ destination, duration: 2 });
+
+    removeSearchPin();
+    searchPinRef.current = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(lon, lat),
+      point: {
+        pixelSize: 14,
+        color: Cesium.Color.fromCssColorString("#2563eb"),
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 3,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+    viewer.scene.requestRender();
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    removeSearchPin();
+    const viewer = viewerRef.current;
+    if (viewer && !viewer.isDestroyed()) viewer.scene.requestRender();
+  };
 
   useEffect(() => {
     onFeatureSelectRef.current = onFeatureSelect;
@@ -366,6 +415,28 @@ const CesiumGlobe = ({ onFeatureSelect, geojsonData, layerColors, paused = false
         {is2D ? <IconGlobe size={15} /> : <IconMap size={15} />}
         {is2D ? "3D Globe" : "2D Map"}
       </button>
+      <button
+        type="button"
+        className="cesium-mode-toggle-btn cesium-upload-btn"
+        onClick={onUploadsClick}
+        title="GIS Data Uploads"
+      >
+        <IconUpload size={15} />
+        Upload
+      </button>
+      <button
+        type="button"
+        className={`cesium-mode-toggle-btn cesium-search-btn ${searchOpen ? "active" : ""}`}
+        onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+        title="Search Location"
+        aria-expanded={searchOpen}
+      >
+        <IconSearch size={15} />
+        Search
+      </button>
+      {searchOpen && (
+        <LocationSearch className="cesium-location-search" onSelect={handlePlaceSelect} onClose={closeSearch} />
+      )}
       <ProjectionBadge visible={!!geojsonData} className="cesium-projection-badge" />
     </div>
   );
